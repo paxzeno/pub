@@ -44,7 +44,8 @@ Read README.md, SECURITY.md and this file before operating this repository.
 - Generate all HTML from our autoescaped template, never original email HTML.
 - Thumbnails are raster screenshots of original email content, never generated topic art.
   Render only normal verified items in an offline browser with scripts/network blocked;
-  strip active HTML, forms and navigation. Never fetch remote/tracking images.
+  strip active HTML, forms and navigation. Remote artwork may only enter through
+  the configured bounded image loader described below; never fetch tracking pixels.
   Embed only the resulting PNG, never source HTML. Flagged items remain text-only.
 - Copy only validated original HTTPS unsubscribe URLs; never follow them automatically.
 - Mark adds/newsletter only after confirmed SMTP acceptance. Local preview is not delivery.
@@ -75,12 +76,14 @@ Keep links to a platform when the original sender belongs to that same platform;
 normal sender authentication and link checks still apply. Match exact domain
 boundaries, never brand words or lookalikes. Unknown and malformed links remain
 subject to security checks. No original Gmail message is edited. Profiles/relays
-do not confer trust. All external images remain blocked.
+do not confer trust. Browser network requests remain blocked; only separately approved, cached raster
+assets may be embedded.
 
 ## Extraction and reviewed exceptions
 Prefer the HTML body when present; retain image alt text in reading order and use
 actual HTML anchor URLs, not potentially broken links in a plain-text alternative.
-Never download images to extract alt text. Title-list profiles (`format: title_list`)
+Alt text extraction never needs downloads. Approved artwork loading is a separate
+optional step and must not be confused with OCR or visual content extraction. Title-list profiles (`format: title_list`)
 require all extracted alt titles after `exclude_image_alts`; descriptions must be
 exact source quotes or explicitly absent. Failure blocks summary/digest generation.
 Exact-sender security exceptions may omit `omit_http_domains` (exact hosts) and
@@ -210,3 +213,30 @@ event date ranges are extracted from source text (including cached summaries).
 A unique subject year may qualify a yearless event range; receipt/current years
 are never substituted. Badges show UPCOMING, ONGOING or ENDED and both dates.
 Times are not invented; ambiguous ranges remain unresolved.
+
+## Image completeness and subscription controls
+- `image_loading.enabled` enables selective remote artwork, disabled in the public
+  sample. Allow only exact configured CDN hosts, path prefixes and query-key sets.
+  Reject tiny declared images, malformed URLs, nonpublic addresses, redirects,
+  unsupported formats and oversized assets. Re-encode accepted raster images;
+  cache successes and failures privately. Send no cookies, credentials or referer.
+- The screenshot browser stays offline with scripts blocked. Embed only cached
+  raster data, never original remote URLs. A CDN fetch can still be logged by its
+  operator: approved artwork does not mean an unobservable or tracking-free fetch.
+- Image loading for thumbnail display is NOT OCR/vision parsing. Text and alt text
+  may omit content in unnamed images. Inspect available artwork before asserting
+  completeness; if it has not been examined, explicitly disclose that limitation.
+  Do not invent missing titles or claim that every image is a separate title.
+- `unsubscribe_controls` maps exact approved hosts to exact URL paths. Preserve a
+  matching HTTPS URL only from the source List-Unsubscribe header, and only when
+  normal sender/link verification passes. This separate user-operated control may
+  survive tracker filtering; ordinary links to that host remain discarded.
+- Never fetch, test by visiting, POST to, or automatically activate unsubscribe
+  URLs. Keep each source's control alongside its summary and original-email link.
+- Before sending a preview, verify the real rendered artwork, number of distinct
+  source summaries, original links, available unsubscribe controls and timing
+  badges. MIME attachment counts alone do not prove usable thumbnail content.
+
+Unresolved image-only content is a completeness gap, not a completed summary.
+The current artwork loader does not automatically OCR/parse images; that integration
+remains pending. Do not silently hand-edit a batch and present it as pipeline output.

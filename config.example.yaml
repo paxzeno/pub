@@ -163,3 +163,20 @@ ignored_tracking_domains:
 ignored_tracking_domain_suffixes:
   - ct.sendgrid.net
   - awstrack.me
+
+# Remote artwork only, never browser networking or tracking pixels. Optional.
+image_loading:
+  enabled: false
+  hosts:
+    d3k81ch9hvuctc.cloudfront.net:
+      path_prefixes: [/company/]
+      query_keys: []
+    assets.nflxext.com:
+      path_prefixes: [/us/email/]
+      query_keys: []
+    dnm.nflximg.net:
+      path_prefixes: [/api/v6/]
+      query_keys: [r]
+# Header-only user-operated controls; these are not ordinary safe links.
+unsubscribe_controls:
+  manage.kmail-lists.com: [/subscriptions/unsubscribe]

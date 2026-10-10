@@ -75,6 +75,9 @@ def render(c, items, groups, flagged, now=None, inline=False):
                 (u for u in m.get("unsubscribe", []) if u in i.get("safe_urls", [])),
                 None,
             )
+            if not unsub:
+                from .core import unsubscribe_control
+                unsub = unsubscribe_control(m, c)
             # This is our Gmail link, not a link supplied in the email.
             from urllib.parse import quote
             rfc_id = m.get("rfc_message_id", "")
@@ -111,7 +114,9 @@ def render(c, items, groups, flagged, now=None, inline=False):
         from .thumbnail import screenshot
 
         original = lookup[g[0]]["message"]
-        data = screenshot(original.get("original_html", ""), original.get("body", ""))
+        from .image_assets import assets
+        image_entries = tuple(assets(original.get("original_html", ""), c).items())
+        data = screenshot(original.get("original_html", ""), original.get("body", ""), image_entries)
         cid = f"topic-{n}@pubmail"
         images[cid] = data
         thumbnail = (

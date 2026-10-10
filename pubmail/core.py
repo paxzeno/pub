@@ -297,3 +297,15 @@ def week_bounds(timestamp, tz):
 def topic_key(title):
     s = re.sub(r"\s+", " ", title.casefold()).strip()
     return s or "untitled"
+
+
+def unsubscribe_control(m, c):
+    """Approved header-only subscription controls, separate from discarded trackers."""
+    if security(m, c)[0] != 'verified':
+        return None
+    allowed = c.get('unsubscribe_controls', {})
+    for url in m.get('unsubscribe', []):
+        h = host(url)
+        if h and urlsplit(url).path in allowed.get(h, []):
+            return url
+    return None

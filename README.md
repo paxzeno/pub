@@ -197,9 +197,9 @@ it. A window larger than the configured limit fails visibly instead of silently 
 
 Install Chromium after Python dependencies: `python -m playwright install chromium`
 (or `python -m playwright install --with-deps chromium` on a fresh Linux host).
-Thumbnails show a raster preview of the first original email per topic, not generated
-art. Scripts and all network/image loading are disabled, so remote product photos
-are omitted. Flagged messages remain text-only. See `templates/README.md`.
+Thumbnails show a raster preview of the first original email per sender, not generated
+art. Scripts and browser networking are disabled. Optional approved artwork is
+fetched separately, cached and re-encoded before offline rendering. Flagged messages remain text-only. See `templates/README.md`.
 
 ### Sender-specific summaries
 
@@ -218,7 +218,7 @@ Keep links to a platform when the original sender belongs to that same platform;
 normal sender authentication and link checks still apply. Match exact domain
 boundaries, never brand words or lookalikes. Unknown and malformed links remain
 subject to security checks. No original Gmail message is edited. Profiles/relays
-do not confer trust. All external images remain blocked.
+do not confer trust. Only separately approved cached raster artwork can be embedded; browser networking remains blocked.
 
 ## Extraction and reviewed exceptions
 Prefer the HTML body when present; retain image alt text in reading order and use
@@ -320,3 +320,11 @@ Newsletter layout uses one thumbnail/card per exact verified original sender.
 Different campaigns retain separate headings, summaries, timing and original links
 within that card. Topic grouping controls ordering, not sender-card boundaries.
 Flagged messages remain in the separate text-only review section.
+
+### Optional artwork and unsubscribe controls
+`image_loading` selectively fetches approved raster artwork into a private cache;
+the screenshot browser remains offline. The sample is disabled by default. See
+AGENTS.md for bounds and privacy tradeoffs. This feature does not perform OCR or
+add image-only details to model summaries. `unsubscribe_controls` preserves approved
+header-only subscription links independently of discarded click trackers; no
+unsubscribe request is executed automatically.

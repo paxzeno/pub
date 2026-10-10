@@ -55,6 +55,26 @@ def load_config(path):
     import re
     if not isinstance(ignored, list) or any(not isinstance(h, str) or not re.fullmatch(r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}", h) for h in ignored):
         raise Error("ignored_tracking_domains must be exact lowercase hostnames (no wildcards or URLs)")
+    controls = c.get("unsubscribe_controls", {})
+    images = c.get("image_loading", {})
+    if not isinstance(controls, dict) or not isinstance(images, dict) or type(images.get("enabled", False)) is not bool:
+        raise Error("Invalid image/subscription configuration")
+    hosts = images.get("hosts", {})
+    if not isinstance(hosts, dict):
+        raise Error("Image hosts must be an exact-host mapping")
+    for h in list(controls) + list(hosts):
+        if not isinstance(h, str) or not re.fullmatch(r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}", h):
+            raise Error("Invalid exact image/subscription hostname")
+    for paths in controls.values():
+        if not isinstance(paths, list) or any(not isinstance(p, str) or not p.startswith('/') or '?' in p for p in paths):
+            raise Error("Subscription controls require exact paths")
+    for rule in hosts.values():
+        if not isinstance(rule, dict) or not isinstance(rule.get('path_prefixes'), list) or not rule['path_prefixes']:
+            raise Error("Image host requires path prefixes")
+        if any(not isinstance(p, str) or not p.startswith('/') or p == '/' for p in rule['path_prefixes']):
+            raise Error("Image paths must be narrowly scoped")
+        if not isinstance(rule.get('query_keys', []), list) or any(not isinstance(k, str) for k in rule.get('query_keys', [])):
+            raise Error("Image query keys must be a list")
     from .reviewer import validate_config
     validate_config(c)
     if c["newsletter"]["format"] not in ("html", "text", "multipart"):

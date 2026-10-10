@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Conservative Gmail promotion triage and a private weekly digest"
 requires-python = ">=3.11"
 license = {text = "MIT"}
-dependencies = ["PyYAML>=6.0,<7", "Jinja2>=3.1.6,<4", "publicsuffix2>=2.20191221", "playwright>=1.50,<2"]
+dependencies = ["PyYAML>=6.0,<7", "Jinja2>=3.1.6,<4", "publicsuffix2>=2.20191221", "playwright>=1.50,<2", "Pillow>=11,<13"]
 
 [project.scripts]
 pubmail = "pubmail.cli:main"

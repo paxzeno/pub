@@ -23,9 +23,12 @@ sender exceptions are needed to clear forwarding uncertainty. X-Original-From al
 never an identity proof. No blanket exemption for Proton, SimpleLogin or Apple.
 
 ## Render safety
-All original HTML is parsed only for plain text and link evidence, then discarded. HTML
-output is autoescaped. No remote images, scripts, attachments, embedded source HTML or
-automatic unsubscribe requests. Thumbnails are generated locally. Suspicious entries have
+Original HTML supplies text/link evidence and sanitized offline raster previews; it is
+never embedded as newsletter HTML. Generated HTML is autoescaped. No scripts, source
+attachments or automatic unsubscribe requests. Optional approved CDN artwork is fetched
+with public-address pinning, no redirects/cookies/referer, byte/dimension limits and
+raster re-encoding. CDN operators may log those requests. Browser networking stays
+blocked. Approved header-only unsubscribe controls are separate from ignored trackers. Suspicious entries have
 URLs and email addresses defanged to resist email clients' automatic linkification.
 
 ## Least privilege

@@ -9,8 +9,9 @@ class Sanitizer(HTMLParser):
     attrs = set('style class id width height align valign cellpadding cellspacing border colspan rowspan bgcolor color face size'.split())
     blocked = set('script iframe object embed svg math noscript template'.split())
 
-    def __init__(self):
+    def __init__(self, images=None):
         super().__init__(convert_charrefs=True)
+        self.images = images or {}
         self.parts = []
         self.depth = 0
         self.in_style = False
@@ -21,6 +22,12 @@ class Sanitizer(HTMLParser):
         if self.depth:
             return
         if tag == 'img':
+            d = dict(attrs)
+            if d.get('src') in self.images:
+                width = d.get('width', '')
+                width_attr = ' width="' + width + '"' if width.isdigit() else ''
+                self.parts.append('<img src="' + self.images[d['src']] + '"' + width_attr + ' style="max-width:100%;height:auto">')
+                return
             alt = dict(attrs).get('alt') or 'Image blocked'
             self.parts.append('<span style="display:inline-block;color:#666;font:12px Arial">[' + escape(alt[:150]) + ']</span>')
         elif tag in self.tags:
@@ -44,17 +51,17 @@ class Sanitizer(HTMLParser):
             self.parts.append(data if self.in_style else escape(data))
 
 
-def document(markup, body):
-    parser = Sanitizer()
+def document(markup, body, images=None):
+    parser = Sanitizer(images)
     parser.feed(markup[:200000])
     content = ''.join(parser.parts) if markup else '<pre style="white-space:pre-wrap;font:18px/1.6 Arial">' + escape(body[:24000]) + '</pre>'
     return ('<!doctype html><html><head><meta charset="utf-8">'
-            '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src \'none\'; font-src \'none\'; script-src \'none\'; connect-src \'none\'; frame-src \'none\'; base-uri \'none\'; form-action \'none\'">'
+            '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:; font-src \'none\'; script-src \'none\'; connect-src \'none\'; frame-src \'none\'; base-uri \'none\'; form-action \'none\'">'
             '</head><body style="margin:16px;background:white">' + content + '</body></html>')
 
 
 @lru_cache(maxsize=32)
-def screenshot(markup, body):
+def screenshot(markup, body, image_entries=()):
     from playwright.sync_api import sync_playwright
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -64,7 +71,7 @@ def screenshot(markup, body):
             context.route('**/*', lambda route: route.abort())
             page = context.new_page()
             page.set_default_timeout(10000)
-            page.set_content(document(markup, body), wait_until='domcontentloaded')
+            page.set_content(document(markup, body, dict(image_entries)), wait_until='load')
             return page.screenshot(type='png', animations='disabled', timeout=10000)
         finally:
             browser.close()
