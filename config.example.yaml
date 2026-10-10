@@ -152,6 +152,10 @@ ignored_tracking_domains:
   - ctrk.klclick1.com
   - manage.kmail-lists.com
   - r20.rs6.net  # Constant Contact documented click redirect host
+  # Google Ads / Ad Manager ad-click hosts (not google.com generally)
+  - www.googleadservices.com
+  - googleads.g.doubleclick.net
+  - adclick.g.doubleclick.net
 
 # Documented dedicated tracking infrastructure, SUBDOMAINS ONLY (DNS boundary).
 # Not a sender allowlist. Never use general hosting/brand roots here.

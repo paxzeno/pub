@@ -6,6 +6,14 @@ they never declare the sender, message or redirect target safe. No redirect is f
 
 ## Enabled
 
+- **Google Ads / Ad Manager:** exact `www.googleadservices.com`,
+  `googleads.g.doubleclick.net`, `adclick.g.doubleclick.net`.
+  [Google Ads documentation](https://support.google.com/google-ads/answer/6161675?hl=en)
+  identifies the googleadservices ad-click URL; [Ad Manager documentation](https://support.google.com/admanager/answer/15866424?hl=en)
+  identifies the two DoubleClick click-string hosts. These destinations are
+  discarded, not approved. Do not exclude all of `google.com`, Google Analytics
+  domains, or arbitrary `google.com/url` redirects merely because Google owns them.
+
 - **SendGrid:** subdomains of `ct.sendgrid.net` (such as account-specific `u…` hosts).
   [Twilio support](https://help.twilio.com/articles/50688232632475) documents the click URL form.
   [Link branding](https://www.twilio.com/docs/sendgrid/ui/account-and-settings/how-to-set-up-link-branding)
