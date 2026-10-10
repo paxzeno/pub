@@ -96,3 +96,9 @@ Respect the declared agent_chain contract when implementing the reviewer adapter
 Until that adapter exists, enabled must remain false (enforced by config loading).
 Do not describe dormant routing or batching fields as live functionality. Owner
 judgement is the last stage, not the default destination for every unclear message.
+
+Senior stages resolve `connection_ref` through `agent_chain.connections`. The
+OpenClaw CLI connection owns executable/config/state/session/timeout settings;
+credentials stay in OpenClaw's credential configuration, never sample YAML.
+No `--deliver`, shell interpolation, email-selected destinations or implicit
+remote-processing opt-in. Connection declarations do not make dispatch operational.

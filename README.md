@@ -255,3 +255,35 @@ trigger calls, notifications, or retries. Existing mailbox safeguards remain act
 A cloud-backed senior reviewer needs separate remote-processing consent; a local
 first stage does not make a remote escalation private. Tokens and live destinations
 belong only in local configuration/credential storage.
+
+
+#### How the script reaches the senior reviewer
+
+The senior stage's `connection_ref` selects `agent_chain.connections.senior_openclaw`.
+This declares the executable, OpenClaw configuration/state paths, dedicated review
+session, timeout and JSON return format. These are deployment settings, never values
+chosen by email content or model output. The public paths are illustrative; use the
+actual paths of your installed OpenClaw instance in your private YAML.
+
+The adapter must expand `~`, set `OPENCLAW_CONFIG_PATH` from `config_path` and
+`OPENCLAW_STATE_DIR` from `state_dir`, and execute this argument vector without a shell:
+
+```text
+<executable> agent --agent <stage.agent_id> --session-key <connection.session_key>
+  --message-file <private-review-packet-file> --timeout <timeout_seconds> --json
+```
+
+`openclaw agent` uses the Gateway by default (do not add `--local`). The CLI resolves
+the gateway address and credentials using its own configuration; the newsletter
+needs no duplicate gateway token. Required secret-provider environment must be
+available to the service running the CLI. Keep packet files owner-only and remove
+them after processing. `deliver: false` means omit `--deliver`: responses return to
+the caller, not Discord or email. JSON is the CLI result envelope, not proof that
+the review decision inside it conforms to our schema; the adapter must validate it.
+A transport timeout or malformed response must defer the item, not approve it.
+
+This connection is **configured, not yet dispatched**: the existing disabled guard
+still applies until queueing, invocation and decision validation are implemented.
+A local CLI may invoke a cloud-backed agent; `allow_remote_processing: false` must
+still block that path until explicitly permitted. Reviewer permissions in this
+YAML are a contract, not a tool sandbox; an adapter must enforce its trust boundary.
