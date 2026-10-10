@@ -85,8 +85,8 @@ only after explicit original-sender confirmation; relay authentication still app
 This is operator-vouched attribution, not cryptographic proof or blanket relay trust.
 
 ## Lists and offer timing
-Bullet summaries render as separate HTML rows with bold item headings (not CSS-only
-whitespace); plain text retains each original bullet. Offer date ranges with an
+Bullet summaries render as separate paragraphs with inline bullet markers and bold
+item headings (not CSS-only whitespace); plain text retains each original bullet. Offer date ranges with an
 explicit year may combine with a matching end-date/time clause in the same source.
 Retain both evidence excerpts, never infer a missing year or timezone. Date-only
 cutoffs display without an invented time. Expired offers remain explicitly red.
@@ -179,3 +179,9 @@ agent_chain:
 ```
 
 This is a partial example: retain the other agent-chain settings.
+
+Original-message buttons use account-scoped Gmail `rfc822msgid:` search when the
+source Message-ID is available; legacy records fall back to thread IDs, not message
+IDs. Review diagnostics name sender/relay domains and every differing HTTPS host,
+never recipient-specific URL paths/tokens. Known forwarding is not itself a link
+mismatch. Domain details in review sections remain defanged and non-clickable.

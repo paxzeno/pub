@@ -126,6 +126,7 @@ def normalize(raw, body_limit=24000):
     return dict(
         id=raw["id"],
         thread_id=raw.get("threadId", ""),
+        rfc_message_id=first("message-id").strip().strip("<>"),
         labels=raw.get("labelIds", []),
         timestamp=int(raw.get("internalDate", "0")) // 1000,
         sender=sender,
@@ -188,7 +189,7 @@ def security(m, c):
     if relay and not ex:
         return (
             "uncertain",
-            "Authenticated relay; original sender needs a scoped exception",
+            f"Forwarding route {relay} authenticated; original sender {original} needs attribution. Link hosts: {', '.join(sorted({host(u) for u in m.get("links", []) if host(u) and not discard(u, original)})) or 'none'}. Forwarding itself is not a link mismatch.",
             [],
         )
     if relay:
@@ -244,7 +245,7 @@ def security(m, c):
         if registered(h) != registered(od) and h not in allowed:
             return (
                 "uncertain",
-                "Link domain differs from authenticated sender; review required",
+                f"Sender domain: {od}; authenticated route: {relay or sd}; differing link hosts: {', '.join(sorted({host(u) for u in links if host(u) and not discard(u, original) and registered(host(u)) != registered(od) and host(u) not in allowed}))}. Expected sender domain or configured exact service hosts: {', '.join(sorted({od} | allowed))}. These are link-host differences, not evidence that forwarding failed.",
                 [],
             )
         safe.append(url)

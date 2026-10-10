@@ -57,12 +57,12 @@ def render(c, items, groups, flagged, now=None, inline=False):
                 None,
             )
             # This is our Gmail link, not a link supplied in the email.
-            original = (
-                "https://mail.google.com/mail/u/?authuser="
-                + c["account"]
-                + "#all/"
-                + m["id"]
-            )
+            from urllib.parse import quote
+            rfc_id = m.get("rfc_message_id", "")
+            if rfc_id and not any(ch.isspace() for ch in rfc_id):
+                original = "https://mail.google.com/mail/u/?authuser=" + quote(c["account"], safe="") + "#search/" + quote("rfc822msgid:" + rfc_id, safe="")
+            else:
+                original = "https://mail.google.com/mail/u/?authuser=" + quote(c["account"], safe="") + "#all/" + quote(m.get("thread_id") or m["id"], safe="")
             entries.append(
                 dict(
                     summary=i["summary"],
