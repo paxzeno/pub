@@ -47,6 +47,11 @@ def load_config(path):
     ):
         if key not in c:
             raise Error(f"Missing config key: {key}")
+    chain = c.get("agent_chain", {})
+    if not isinstance(chain, dict) or not isinstance(chain.get("enabled", False), bool):
+        raise Error("agent_chain must be a mapping with a boolean enabled flag")
+    if chain.get("enabled"):
+        raise Error("Agent-chain dispatch is not implemented; keep agent_chain.enabled false")
     if c["newsletter"]["format"] not in ("html", "text", "multipart"):
         raise Error("Invalid newsletter format")
     c["state_dir"] = str(Path(c["state_dir"]).expanduser())

@@ -90,3 +90,9 @@ whitespace); plain text retains each original bullet. Offer date ranges with an
 explicit year may combine with a matching end-date/time clause in the same source.
 Retain both evidence excerpts, never infer a missing year or timezone. Date-only
 cutoffs display without an invented time. Expired offers remain explicitly red.
+
+## Agent-chain configuration
+Respect the declared agent_chain contract when implementing the reviewer adapter.
+Until that adapter exists, enabled must remain false (enforced by config loading).
+Do not describe dormant routing or batching fields as live functionality. Owner
+judgement is the last stage, not the default destination for every unclear message.

@@ -238,3 +238,20 @@ whitespace); plain text retains each original bullet. Offer date ranges with an
 explicit year may combine with a matching end-date/time clause in the same source.
 Retain both evidence excerpts, never infer a missing year or timezone. Date-only
 cutoffs display without an invented time. Expired offers remain explicitly red.
+
+### Agent chain configuration (integration pending)
+
+`agent_chain` in the sample describes rules → local model → senior reviewer →
+human owner, with escalation reasons, batched notifications, deduplication, retry
+and hop limits, an evidence packet, and reviewer permissions. `model_ref: model`
+uses the existing model section; `agent_id` names an agent, not an inference model.
+The example routes unresolved cases to an OpenClaw `main` agent, then the owner
+only when judgement is required. Match identifiers to your own deployment.
+
+**This is a configuration contract, not an implemented queue/dispatcher.** Keep
+`enabled: false`; the CLI explicitly rejects true instead of silently ignoring it.
+The batching/routing fields are reserved for that integration and currently do not
+trigger calls, notifications, or retries. Existing mailbox safeguards remain active.
+A cloud-backed senior reviewer needs separate remote-processing consent; a local
+first stage does not make a remote escalation private. Tokens and live destinations
+belong only in local configuration/credential storage.

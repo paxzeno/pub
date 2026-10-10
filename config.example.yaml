@@ -79,3 +79,55 @@ summary_profiles:
     instructions: Summarise destinations, data allowance, price and offer deadline when stated.
     example: Europe — 5 GB for 30 days at the stated sale price; no expiry stated.
     max_characters: 1200
+
+# Routing contract: rules -> local model -> senior agent -> human owner.
+# Planned integration, NOT an active dispatcher. The CLI rejects enabled: true
+# until the queue/agent adapter is implemented; no silent pretend-escalation.
+agent_chain:
+  enabled: false
+  stages:
+    - id: rules
+      kind: deterministic
+    - id: local
+      kind: model
+      model_ref: model  # Reuses the local Ollama settings above
+    - id: senior
+      kind: agent
+      agent_id: main  # Example OpenClaw reviewer; not a provider model ID
+    - id: owner
+      kind: human
+      contact_ref: newsletter.recipient  # No personal address in this sample
+  routing:
+    rules_next: local
+    local_uncertain: senior
+    local_failure: senior
+    senior_needs_judgement: owner
+    senior_unavailable: defer  # Keep in INBOX; never auto-approve
+  escalate_on:
+    - low_confidence
+    - sender_or_link_uncertainty
+    - missing_summary_evidence
+    - missing_deadline_evidence
+    - invalid_grouping
+    - model_failure
+  batching:
+    max_messages: 20
+    min_interval_minutes: 60
+    max_batches_per_day: 4
+    notify_when_empty: false
+  deduplication:
+    key: [message_id, content_hash, policy_hash, reason]
+    suppress_until_changed_or_resolved: true
+  limits:
+    max_senior_attempts_per_item: 1
+    max_hops: 2  # local -> senior -> owner; no loops
+  review_packet:
+    include: [reason, source_excerpt, authentication_evidence, proposed_decision]
+    max_excerpt_characters: 6000
+    email_content_is_untrusted: true
+    allow_remote_processing: false  # Separate opt-in if senior uses a cloud model
+  decisions:
+    reviewer_may: [classify, correct_summary, explain, propose_narrow_rule]
+    reviewer_must_not: [send_mail, archive_directly, grant_blanket_trust]
+    rule_changes_require_owner: true
+    apply_through_normal_safety_checks: true
