@@ -69,6 +69,7 @@ def load_config(path):
         raise Error('Invalid image loading configuration')
     for section, key, default, maximum in (
         (vision, 'images_per_pass', 4, 128),
+        (c.get('image_loading', {}), 'max_download_bytes', 3_000_000, 50_000_000),
         (vision, 'pass_seconds', 120, 3600),
         (c.get('image_loading', {}), 'downloads_per_pass', 16, 256),
     ):

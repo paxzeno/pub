@@ -371,3 +371,5 @@ Recognise `X-SimpleLogin-Original-From` and `X-Original-From` only as original-s
 Every source entry, including review items, shows `From: address` then `Date: yyyy-mm-dd hh:mm:ss` on the next line in both HTML and plain text. Use the source Gmail receipt timestamp in the configured timezone; do not substitute digest-generation time. Sender grouping preserves each source timestamp.
 
 Approved static-artwork paths may contain `%20` spaces. Other percent escapes, encoded separators/traversal, literal `..`, redirects and unapproved hosts/paths remain rejected. This is filename compatibility, not a broader CDN trust rule.
+
+Vision inputs smaller than 64 pixels on either axis are padded without rescaling or changing their source-image hash; this avoids Qwen image-processor errors on small logos. `image_loading.max_download_bytes` controls each approved asset download (default 3000000, maximum supported 50000000), independently of usage quotas. GIF loading currently extracts the first frame only; do not claim all animation frames were inspected.

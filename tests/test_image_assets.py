@@ -41,3 +41,14 @@ class ImageAssets(unittest.TestCase):
         self.assertTrue(eligible('https://cdn.example.com/images/Product%20Hero.png',policy))
         for path in ['%2e%2e/secret.png','%2520secret.png','%2fsecret.png','%20../secret.png','../secret.png']:
             self.assertFalse(eligible('https://cdn.example.com/images/'+path,policy))
+
+    def test_small_vision_input_is_padded_without_losing_pixels(self):
+        from pubmail.vision import model_image
+        from PIL import Image
+        from io import BytesIO
+        import base64
+        b=BytesIO();Image.new('RGB',(108,25),'red').save(b,format='PNG')
+        result=Image.open(BytesIO(base64.b64decode(model_image(base64.b64encode(b.getvalue()).decode()))))
+        self.assertEqual(result.size,(108,64))
+        self.assertEqual(result.getpixel((0,0)),(255,0,0))
+        self.assertEqual(result.getpixel((0,63)),(255,255,255))

@@ -5,7 +5,8 @@ from pubmail.vision import enrich
 from pubmail.model import Model
 from pubmail.image_assets import assets
 class Resume(unittest.TestCase):
-    def test_thirteen_images_resume_without_reprocessing(self):
+    @patch('pubmail.vision.model_image',side_effect=lambda b:b)
+    def test_thirteen_images_resume_without_reprocessing(self,_padding):
         with tempfile.TemporaryDirectory() as root:
             c={'vision':{'enabled':True,'images_per_pass':4},'state_dir':root,'model':{}}
             m={'body':'Original','original_html':'<img>'}
@@ -17,7 +18,8 @@ class Resume(unittest.TestCase):
                     self.assertNotIn('_vision_enriched',m)
                 self.assertEqual(len(enrich(m,c)['visual_evidence']),13)
                 enrich(m,c);self.assertEqual(ask.call_count,13)
-    def test_time_budget(self):
+    @patch('pubmail.vision.model_image',side_effect=lambda b:b)
+    def test_time_budget(self,_padding):
         with tempfile.TemporaryDirectory() as root:
             c={'vision':{'enabled':True,'pass_seconds':1},'state_dir':root,'model':{}}
             images={str(i):'data:image/png;base64,'+base64.b64encode(str(i).encode()).decode() for i in range(2)}

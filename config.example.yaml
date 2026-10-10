@@ -167,6 +167,7 @@ ignored_tracking_domain_suffixes:
 
 # Remote artwork only, never browser networking or tracking pixels. Optional.
 image_loading:
+  max_download_bytes: 3000000  # Per asset; raise for larger campaign GIFs
   downloads_per_pass: 16
   enabled: false
   hosts:

@@ -5,7 +5,8 @@ from pubmail.vision import enrich,validate
 from pubmail.io import Error
 from pubmail.model import Model
 class Vision(unittest.TestCase):
-    def test_evidence_cache_and_title_validation(self):
+    @patch('pubmail.vision.model_image',side_effect=lambda b:b)
+    def test_evidence_cache_and_title_validation(self,_padding):
         with tempfile.TemporaryDirectory() as root:
             c={'vision':{'enabled':True},'state_dir':root,'model':{'name':'vision-example'}}
             m={'body':'Original text','original_html':'<img src="x">'}

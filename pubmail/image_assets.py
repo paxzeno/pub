@@ -36,7 +36,7 @@ class PinnedHTTPS(http.client.HTTPSConnection):
         self.sock = self._context.wrap_socket(sock, server_hostname=self.host)
 
 
-def fetch(url):
+def fetch(url, max_bytes=3_000_000):
     from PIL import Image
     u = urlsplit(url)
     conn = PinnedHTTPS(u.hostname, timeout=5, context=ssl.create_default_context())
@@ -45,8 +45,8 @@ def fetch(url):
         response = conn.getresponse()
         if response.status != 200 or response.getheader('Content-Type','').split(';')[0] not in ('image/png','image/jpeg','image/webp','image/gif'):
             raise ValueError('Not a supported image; redirects are not followed')
-        data = response.read(3_000_001)
-        if len(data) > 3_000_000:
+        data = response.read(max_bytes + 1)
+        if len(data) > max_bytes:
             raise ValueError('Image too large')
         with Image.open(BytesIO(data)) as im:
             if min(im.size) < 8 or im.width * im.height > 16_000_000:
@@ -87,7 +87,7 @@ def assets(markup, c):
             if downloaded >= policy.get('downloads_per_pass', 16):
                 raise ProcessingPending('Artwork download pass saved; rerun to resume remaining images')
             downloaded += 1
-            try:cached={'data':base64.b64encode(fetch(url)).decode()}
+            try:cached={'data':base64.b64encode(fetch(url, max_bytes=policy.get("max_download_bytes",3_000_000))).decode()}
             except Exception:cached={'data':None}
             private_write(path,json.dumps(cached))
         if cached.get('data'):out[url]='data:image/png;base64,'+cached['data']

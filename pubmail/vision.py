@@ -30,6 +30,19 @@ def validate(result):
     return {'text':text,'titles':titles,'readable':True}
 
 
+def model_image(b64):
+    """Pad tiny approved artwork for vision backends without changing source hashes."""
+    from PIL import Image, ImageOps
+    from io import BytesIO
+    raw=base64.b64decode(b64)
+    with Image.open(BytesIO(raw)) as im:
+        if min(im.size) >= 64: return b64
+        pad=(max(0,64-im.width),max(0,64-im.height))
+        out=ImageOps.expand(im.convert('RGB'),border=(0,0,pad[0],pad[1]),fill='white')
+        stream=BytesIO();out.save(stream,format='PNG')
+        return base64.b64encode(stream.getvalue()).decode()
+
+
 def enrich(m,c):
     policy=c.get('vision',{})
     if not policy.get('enabled') or m.get('_vision_enriched'):
@@ -69,7 +82,7 @@ def enrich(m,c):
             processed += 1
             for attempt in range(2):
                 try:
-                    result=validate(reader.ask(PROMPT,{'task':'Extract visible email-image evidence. Every title must also appear in text. If this is a product or logo use no titles.', 'validation_retry':bool(attempt)},images=[b64]))
+                    result=validate(reader.ask(PROMPT,{'task':'Extract visible email-image evidence. Every title must also appear in text. If this is a product or logo use no titles.', 'validation_retry':bool(attempt)},images=[model_image(b64)]))
                     break
                 except Error:
                     if attempt:raise
