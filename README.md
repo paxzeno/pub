@@ -279,3 +279,19 @@ The routing diagram/permission fields document the fixed chain in this version;
 it is not an arbitrary multi-hop workflow engine. One senior attempt per task
 and two hops are supported. Enabled adapters do not enable either mail schedule.
 Credentials, source mail, responses and private destinations must remain local.
+
+### Reviewer cooldown
+
+Set `agent_chain.batching.min_interval_minutes` to an integer from **0 to 720**
+(12 hours). `0` dispatches eligible pending work without a cooldown; `60` waits
+one hour between batches. The same configured delay applies to manual and scheduled
+runs. Batch-size limits, the rolling daily budget, and deduplication still apply
+when the cooldown is zero. Changing this value does not start a run or enable timers.
+
+```yaml
+agent_chain:
+  batching:
+    min_interval_minutes: 0  # Immediate dispatch during supervised cleanup
+```
+
+This is a partial example: retain the other agent-chain settings.

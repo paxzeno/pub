@@ -22,7 +22,7 @@ def validate_config(c):
             raise ValueError()
         if connection['processing'] == 'remote' and not chain['review_packet'].get('allow_remote_processing'):
             raise Error('Senior remote processing requires explicit consent')
-        for key, low, high in [('max_messages',1,100), ('min_interval_minutes',0,1440), ('max_batches_per_day',1,100)]:
+        for key, low, high in [('max_messages',1,100), ('min_interval_minutes',0,720), ('max_batches_per_day',1,100)]:
             value = chain['batching'][key]
             if type(value) is not int or not low <= value <= high: raise ValueError()
         if type(connection['timeout_seconds']) is not int or not 1 <= connection['timeout_seconds'] <= 600: raise ValueError()

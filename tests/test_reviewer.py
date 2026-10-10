@@ -97,3 +97,22 @@ class ReviewerTests(unittest.TestCase):
         with patch('pubmail.reviewer.run',side_effect=reply),patch('pubmail.core.security',return_value=('verified','ok',[])),patch('pubmail.core.preclassify',return_value=('keep','protected')):
             review_decisions([d],self.c,model,self.store)
         self.assertEqual(d['action'],'keep')
+    def test_cooldown_bounds(self):
+        for value in (0, 60, 720):
+            self.c['agent_chain']['batching']['min_interval_minutes']=value
+            validate_config(self.c)
+        for value in (-1, 721, 1440, True, 0.5, '60'):
+            self.c['agent_chain']['batching']['min_interval_minutes']=value
+            with self.assertRaises(Error): validate_config(self.c)
+    def test_zero_cooldown_dispatches_distinct_batches(self):
+        self.c['agent_chain']['batching']['min_interval_minutes']=0
+        with patch('pubmail.reviewer.run',side_effect=self.response) as call:
+            self.q.exchange([self.task],[lambda o:None])
+            self.q.exchange([dict(self.task,reason='different')],[lambda o:None])
+            self.assertEqual(call.call_count,2)
+    def test_zero_cooldown_keeps_daily_budget(self):
+        self.c['agent_chain']['batching'].update(min_interval_minutes=0,max_batches_per_day=1)
+        with patch('pubmail.reviewer.run',side_effect=self.response) as call:
+            self.q.exchange([self.task],[lambda o:None])
+            self.q.exchange([dict(self.task,reason='different')],[lambda o:None])
+            self.assertEqual(call.call_count,1)
