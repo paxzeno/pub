@@ -74,6 +74,9 @@ def assets(markup, c):
             d=dict(attrs);url=d.get('src','')
             if tag=='img' and not tracker(url) and eligible(url,policy,d) and url not in self.urls:self.urls.append(url)
     parser=Sources();parser.feed(markup[:200000]);out={}
+    strict=c.get('vision',{}).get('enabled',False)
+    from .io import Error
+    if strict and len(parser.urls)>12:raise Error('Approved image count exceeds vision budget')
     root=Path(c['state_dir'])/'image-cache';root.mkdir(mode=0o700,exist_ok=True)
     for url in parser.urls[:12]:
         path=root/(hashlib.sha256(url.encode()).hexdigest()+'.json')
@@ -84,4 +87,5 @@ def assets(markup, c):
             except Exception:cached={'data':None}
             private_write(path,json.dumps(cached))
         if cached.get('data'):out[url]='data:image/png;base64,'+cached['data']
+        elif strict:raise Error('Approved artwork unavailable; visual evidence incomplete')
     return out

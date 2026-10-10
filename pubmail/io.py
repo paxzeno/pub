@@ -55,6 +55,11 @@ def load_config(path):
     import re
     if not isinstance(ignored, list) or any(not isinstance(h, str) or not re.fullmatch(r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}", h) for h in ignored):
         raise Error("ignored_tracking_domains must be exact lowercase hostnames (no wildcards or URLs)")
+    vision = c.get('vision', {})
+    if not isinstance(vision, dict) or type(vision.get('enabled',False)) is not bool or not isinstance(vision.get('model',{}),dict):
+        raise Error('Invalid vision configuration')
+    if vision.get('enabled') and not c.get('image_loading',{}).get('enabled'):
+        raise Error('Vision extraction requires approved image loading')
     controls = c.get("unsubscribe_controls", {})
     images = c.get("image_loading", {})
     if not isinstance(controls, dict) or not isinstance(images, dict) or type(images.get("enabled", False)) is not bool:

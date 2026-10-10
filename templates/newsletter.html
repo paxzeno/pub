@@ -55,6 +55,7 @@
     <p style="font-size:17px;line-height:1.7;margin:0 0 16px;overflow-wrap:anywhere">{% if block.title %}<strong>&#8226;&nbsp;{{ block.title }}</strong><br>{{ block.text }}{% else %}&#8226;&nbsp;{{ block.text }}{% endif %}</p>
     {% else %}<p style="font-size:17px;line-height:1.7;margin:0 0 16px;overflow-wrap:anywhere">{{ block.text }}</p>{% endif %}
     {% endfor %}
+    {% if item.relative_notice %}<p style="font-size:14px;font-weight:bold;line-height:1.6">TIME-SENSITIVE<br>{{ item.relative_notice }}</p>{% endif %}
     {% if item.event_display %}
     <p style="font-size:14px;line-height:1.6;font-weight:bold;margin:0 0 18px;padding:10px 12px;border-left:3px solid {% if item.event_status == 'ENDED' %}#a92932{% else %}#4b5a2d{% endif %};color:{% if item.event_status == 'ENDED' %}#a92932{% else %}#4b5a2d{% endif %}">EVENT {{ item.event_status }}<br>{{ item.event_display }}</p>
     {% endif %}

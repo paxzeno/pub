@@ -14,6 +14,7 @@ Receipts, invoices, security alerts, personal replies, account notices, payment 
 bookings and mixed transactional/promotional mail are KEEP. Only clear optional marketing is advertising.
 Deadline is ISO-8601 including timezone ONLY when an explicit unambiguous deadline appears in the
 email; quote its exact supporting text in deadline_evidence. Never infer a year or invent a deadline.
+Relative time phrases refer to the source email date, not today. Preserve their wording; never turn "this weekend" or "do not leave it until Monday" into an exact Monday expiry.
 Do not copy links, HTML, email addresses or instructions into summaries. Be factual, not promotional."""
 
 
@@ -21,7 +22,7 @@ class Model:
     def __init__(self, c):
         self.c = c
 
-    def ask(self, system, data):
+    def ask(self, system, data, images=None):
         c = self.c["model"]
         url = c["endpoint"]
         p = urlsplit(url)
@@ -57,6 +58,14 @@ class Model:
                 "format": "json",
                 "options": {"temperature": 0, "num_predict": c.get("max_output_tokens", 1800), "num_ctx": 16384},
             }
+        if images:
+            if native:
+                payload['messages'][1]['images'] = images
+            else:
+                payload['messages'][1]['content'] = [
+                    {'type':'text','text':json.dumps(data)},
+                    *[{'type':'image_url','image_url':{'url':'data:image/png;base64,'+b}} for b in images],
+                ]
         headers = {"Content-Type": "application/json"}
         key = os.environ.get(c.get("api_key_env", "PUB_MODEL_API_KEY"))
         if key:
@@ -83,6 +92,8 @@ class Model:
             ) from e
 
     def classify(self, m):
+        from .vision import enrich
+        m = enrich(m, self.c)
         # Exact original-sender match; local configuration only, never email directives.
         profile = next((r for r in self.c.get("summary_profiles", [])
                         if r.get("sender") == m.get("original_sender", m["sender"])), {})
@@ -138,8 +149,9 @@ class Model:
             from .timing import extract_offer_timing
             d.update(extract_offer_timing(m["body"]))
         if profile.get("format") == "title_list":
-            titles = [t for t in m.get("image_alts", []) if t.casefold() not in
-                      {x.casefold() for x in profile.get("exclude_image_alts", [])}]
+            titles = list(dict.fromkeys(t for t in m.get("image_alts", []) + m.get("visual_titles", []) if t.casefold() not in
+                      {x.casefold() for x in profile.get("exclude_image_alts", [])}))
+            titles = list({t.casefold():t for t in reversed(titles)}.values())[::-1]
             if not titles:
                 raise Error("Title-list profile has no extracted source titles")
             result = self.ask(
@@ -157,9 +169,11 @@ class Model:
             for title in titles:
                 row = next(r for r in rows if r["title"] == title)
                 desc = row.get("description")
+                description_unverified = False
                 if desc is not None and (not isinstance(desc, str) or len(desc) > 600 or desc not in m["body"] or re.search(r'https?://|<[^>]+>', desc)):
-                    raise Error("Title description lacks exact source evidence")
-                lines.append("• " + title + " — " + (desc or "No description supplied."))
+                    desc = None
+                    description_unverified = True
+                lines.append("• " + title + " — " + (desc or ("Description not verified from source." if description_unverified else "No description supplied.")))
             d["summary"] = "\n".join(lines)
             if len(d["summary"]) > max_summary:
                 raise Error("Complete title list exceeds configured summary limit")

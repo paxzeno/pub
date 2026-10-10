@@ -340,6 +340,14 @@ class Case(unittest.TestCase):
         with self.assertRaises(Error):
             digest.render(self.c, [first,second], [['a1']], [])
 
+    def test_relative_urgency_is_visible_without_invented_deadline(self):
+        items=self.items();items[0]['deadline']=None
+        items[0]['message'].update(subject='Só este fim de semana',body='Sale')
+        h,t,_=digest.render(self.c,items,[['a1']],[])
+        self.assertIn('TIME-SENSITIVE',h)
+        self.assertIn('exact cutoff not supplied',t)
+        self.assertNotIn('EXPIRED',t)
+
     def test_suspicious_no_links(self):
         h, t, imgs = digest.render(self.c, [], [], self.items())
         self.assertNotIn("href=", h)

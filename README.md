@@ -324,8 +324,8 @@ Flagged messages remain in the separate text-only review section.
 ### Optional artwork and unsubscribe controls
 `image_loading` selectively fetches approved raster artwork into a private cache;
 the screenshot browser remains offline. The sample is disabled by default. See
-AGENTS.md for bounds and privacy tradeoffs. This feature does not perform OCR or
-add image-only details to model summaries. `unsubscribe_controls` preserves approved
+AGENTS.md for bounds and privacy tradeoffs. This loader alone does not perform OCR; enable the separate `vision` step below
+to add image evidence to model summaries. `unsubscribe_controls` preserves approved
 header-only subscription links independently of discarded click trackers; no
 unsubscribe request is executed automatically.
 
@@ -349,8 +349,8 @@ curl -s http://127.0.0.1:11434/api/show \
 ```
 Require `vision` in `capabilities`, then test with a non-sensitive image containing
 known text. Check titles, small print and dates, not only broad image descriptions.
-The same vision model may handle text tasks, or a future adapter can use a dedicated
-image extractor and a text summariser. No particular vendor is required.
+The same vision model may handle text tasks, or `vision.model` can select a dedicated
+image extractor while `model` remains the text summariser. No particular vendor is required.
 
 Existing model selection uses these **supported** YAML keys:
 ```yaml
@@ -362,16 +362,24 @@ model:
   max_output_tokens: 1800
 ```
 This is a partial example; retain other config sections. `image_loading.enabled`
-controls approved artwork fetching, not model vision. Do not add an imaginary
-`vision: true` switch and assume that image extraction is enabled.
+controls approved artwork fetching, not model vision. Enable structured extraction separately:
+```yaml
+vision:
+  enabled: true
+  model: {}  # Inherit model; optionally override name/endpoint/timeout here.
+```
+Use the mapping shown, not a bare `vision: true`.
 
-**Integration status:** the current model client sends text only. Choosing a vision
-model does not yet make newsletter summaries read images. The required change is
-to pass approved cached image bytes through native Ollama `messages[].images` or an
-OpenAI-compatible image-content interface, then validate and merge the extracted
-evidence before summarisation. See [AGENTS.md](AGENTS.md#required-vision-extraction-pipeline)
-for the implementation and acceptance contract. Automatic image-to-summary handling
-must pass those checks before it is advertised as operational.
+**Integration status:** image-aware extraction now passes approved cached image
+bytes through native Ollama `messages[].images` or OpenAI-compatible image content.
+It reads each source separately, caches structured evidence by image/model/contract,
+and merges visual text with HTML/alt text before summaries. Title-list profiles
+include visual titles. Invalid/unreadable evidence, missing approved assets and
+more than 12 approved images per source stop generation rather than silently
+produce a complete-looking digest. The model can still misread stylised text;
+JSON/source-association checks are not proof of visual accuracy. The text-only
+senior adapter does not receive image bytes and cannot repair unread artwork.
+See [AGENTS.md](AGENTS.md#required-vision-extraction-pipeline) for the contract.
 
 Keep image inference local by default. A remote backend requires explicit remote
 processing consent and appropriate authentication; approved image downloads do not

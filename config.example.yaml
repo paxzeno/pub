@@ -180,3 +180,8 @@ image_loading:
 # Header-only user-operated controls; these are not ordinary safe links.
 unsubscribe_controls:
   manage.kmail-lists.com: [/subscriptions/unsubscribe]
+
+# Image evidence before summaries; uses model above unless overridden.
+vision:
+  enabled: false
+  model: {}

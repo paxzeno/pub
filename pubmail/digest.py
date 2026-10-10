@@ -71,6 +71,13 @@ def render(c, items, groups, flagged, now=None, inline=False):
                 today = now.astimezone(ZoneInfo(c["timezone"])).date()
                 event_status = "ENDED" if last < today else "UPCOMING" if first > today else "ONGOING"
                 event_display = first.strftime("%d %b %Y") + " – " + last.strftime("%d %b %Y") + " (times not supplied)"
+            relative_notice = ""
+            if not deadline and not event:
+                import re
+                match = re.search(r"(?:s[oó]\s+)?este fim[ -]de[ -]semana|this weekend|today only|s[oó] hoje", m.get('subject','')+' '+m.get('body',''), re.I)
+                if match:
+                    received = datetime.fromtimestamp(m['timestamp'], ZoneInfo(c['timezone'])).strftime('%d %b %Y')
+                    relative_notice = '“'+match[0]+'” — source email '+received+'; exact cutoff not supplied.'
             unsub = next(
                 (u for u in m.get("unsubscribe", []) if u in i.get("safe_urls", [])),
                 None,
@@ -95,6 +102,7 @@ def render(c, items, groups, flagged, now=None, inline=False):
                     deadline_display=display,
                     event_status=event_status,
                     event_display=event_display,
+                    relative_notice=relative_notice,
                     sender=m["original_sender"],
                     original_url=original,
                     unsubscribe=unsub,
@@ -103,6 +111,8 @@ def render(c, items, groups, flagged, now=None, inline=False):
             if len(g) > 1:
                 text += ["### " + i["title"]]
             text += [i["summary"]]
+            if relative_notice:
+                text += ["TIME-SENSITIVE: " + relative_notice]
             if event:
                 text += ["EVENT " + event_status + ": " + event_display]
             if deadline:

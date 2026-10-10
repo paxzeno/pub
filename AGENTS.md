@@ -276,7 +276,24 @@ are visible; no tracking pixels are fetched; model/backend choice is documented
 and configurable. Prove with public fictional fixtures and a private real-batch
 run, not just an isolated poster read.
 
-Current implementation status (2026-10-10): approved image loading and offline
-thumbnails work. `Model.ask` still sends text-only messages; automatic multimodal
-extraction and its validation/escalation path are NOT implemented. These are the
-implementation requirements, not a claim that editing this file enables them.
+Current implementation status (2026-10-10): `vision.enabled` now runs image
+extraction before `Model.classify`. It uses the selected model or `vision.model`
+overrides, passes actual bytes via Ollama/OpenAI-compatible image inputs, caches
+validated visual evidence, and combines it with HTML/alt text. Source title lists
+include visual titles with case-insensitive deduplication. An invalid extraction
+gets at most one re-read; unresolved visual failures stop digest generation.
+The current senior adapter is text-only: it cannot repair unread images by claiming
+to see them. Extracted text is model output, not infallible OCR; inspect real-batch
+results before claiming quality. Approved image coverage is bounded to 12 per source;
+missing approved assets or exceeding this limit blocks the image-aware summary.
+
+Senior visual corrections may be stored locally under `vision-cache/reviews/<key>.json`,
+keyed by image fingerprint, model config and contract version. Require image hash,
+reviewer identity, reason and validated structured output; reuse as source evidence,
+not handwritten summaries. Only write after inspecting the actual artwork. This
+is an explicit reviewed-evidence fallback, not automatic image delivery to the
+currently text-only senior adapter. Report when this manual senior step was needed.
+If a title is source-backed but the proposed description fails exact-evidence
+validation, discard that description and explicitly say "Description not verified
+from source." Do not invent a plot or imply no description exists. Title coverage
+failures still block the summary.
