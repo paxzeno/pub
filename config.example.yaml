@@ -33,6 +33,9 @@ link_policy:
   omit_same_brand_http: true
   omitted_service_hosts:
     shop.example: [campaign.mailer.example, links.events.example]
+    # Illustrative operator-approved campaign redirect to discard, not follow:
+    mail.device.example: [redirect.campaign-platform.example]
+    # Record approval/reason in private deployment notes, never public mail data.
     # Key is the exact authenticated ORIGINAL domain, not a relay/provider root.
 # Normal links must match the sender's registrable domain. This map also checks
 # common claimed brands in display names; add your own brand mappings locally.

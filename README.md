@@ -478,13 +478,30 @@ registrable domain matches the authenticated original sender. It never upgrades,
 fetches or renders them. Fragment-only in-page anchors are omitted too. Credentials, unusual ports, malformed separators and
 unrelated/lookalike hosts still require review. Set false to restore strict HTTP review.
 `link_policy.omitted_service_hosts` maps an exact authenticated original domain to
-exact researched service hosts to discard. Example: `shop.example: [links.mailer.example]`.
+exact researched or explicitly operator-approved service hosts to discard. Example: `shop.example: [links.mailer.example]`.
 This is not a sender allowlist or safe-link allowlist, and cannot establish relay
 attribution. No provider-root wildcards; forwarded messages need normal original-sender
 verification first. Other links, display-name checks and content classification still
 apply. Unknown unrelated domains remain unresolved pending senior investigation;
-do not label a mere host mismatch as detected phishing. Research service hosts before
+do not label a mere host mismatch as detected phishing. Research service hosts or obtain explicit operator approval before
 adding omissions; never follow recipient-specific tracking or unsubscribe URLs.
 A passing link check only permits normal presentation, not automatic mailbox approval.
 
 Approved static artwork filenames may use encoded spaces, braces and parentheses (`%20`, `%7B`, `%7D`, `%28`, `%29`). Encoded separators, traversal and double encoding remain blocked. AVIF artwork is accepted only when the installed Pillow decoder can decode it, then re-encoded as PNG.
+
+### Operator-approved tracking-link omission
+Distinguish the authenticated From/original-sender domain from a redirect host in
+email links. Approval of one domain does not approve a different domain or its
+subdomains. When the operator explicitly asks to omit a particular tracking host,
+record that exact host under the authenticated original domain in
+`link_policy.omitted_service_hosts`. Record the reason and approval provenance in
+private deployment notes; do not claim ownership was independently verified.
+Recheck the complete message after omission. If all remaining checks pass, clear
+the security-review classification for subsequent preparation; do not retain it
+solely because of the discarded host. This does not approve redirect destinations,
+fetch those links, bypass authentication, change advertising classification, or
+create an artwork/unsubscribe allowlist. The Gmail original-message button remains
+available even when no sender-provided web links survive.
+Keep real sender details and approval records private; public examples are fictional.
+Preserve historical sent manifests. Regenerate a preview when requested; clearing a
+security flag alone neither resends mail nor archives/newsletter-labels its source.
