@@ -385,3 +385,9 @@ Keep image inference local by default. A remote backend requires explicit remote
 processing consent and appropriate authentication; approved image downloads do not
 authorise uploading email artwork to an unrelated service. Never send image-only
 content to a text-only fallback while claiming it received equivalent evidence.
+
+### Processing cost
+Rules and text-only triage run before expensive visual extraction. Digest preparation
+reads candidate artwork using the image/evidence caches. Sender presentation grouping
+is deterministic and makes no model call. Pubmail inference is serialised across its
+processes using a shared state-directory lock; other host workloads are not throttled.

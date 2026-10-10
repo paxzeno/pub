@@ -29,7 +29,9 @@ def decide(m, c, model, store):
         else:
             try:
                 from .reviewer import EscalatingModel
-                result = (model.local if isinstance(model, EscalatingModel) else model).classify(m)
+                from .model import Model
+                classifier = model.local if isinstance(model, EscalatingModel) else model
+                result = classifier.classify(m, include_images=False) if isinstance(classifier, Model) else classifier.classify(m)
                 d["classification"] = {
                     "kind": result["kind"],
                     "confidence": result["confidence"],

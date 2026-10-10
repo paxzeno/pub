@@ -45,3 +45,12 @@ class Vision(unittest.TestCase):
         summary=model.classify(m)['summary']
         self.assertIn('Description not verified from source.',summary)
         self.assertNotIn('invented plot',summary)
+
+    def test_triage_does_not_invoke_vision(self):
+        from unittest.mock import Mock
+        model=Model({'vision':{'enabled':True}})
+        model.ask=Mock(return_value={'kind':'keep','confidence':1,'title':'Notice','summary':'Notice','topic':'Notice','deadline':None})
+        m={'subject':'Notice','sender':'sender@example.com','timestamp':0,'body':'Notice'}
+        with patch('pubmail.vision.enrich') as extraction:
+            self.assertEqual(model.classify(m,include_images=False)['kind'],'keep')
+            extraction.assert_not_called()

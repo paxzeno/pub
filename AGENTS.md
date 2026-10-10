@@ -297,3 +297,11 @@ If a title is source-backed but the proposed description fails exact-evidence
 validation, discard that description and explicitly say "Description not verified
 from source." Do not invent a plot or imply no description exists. Title coverage
 failures still block the summary.
+
+## Cost and concurrency
+Use rules/protection checks before text-only triage. Triage and its senior decision
+validation must not download or infer images. Run vision during digest preparation
+for selected verified candidates, with the existing evidence cache. Presentation
+sender grouping is deterministic; it must not summon a grouping model. Pubmail's
+model calls share `state_dir/inference.lock`; do not bypass it with overlapping
+manual probes. This lock serialises this project's inference, not other host apps.

@@ -72,10 +72,12 @@ class Model:
             headers["Authorization"] = "Bearer " + key
         try:
             req = urllib.request.Request(url, json.dumps(payload).encode(), headers)
-            with urllib.request.urlopen(
-                req, timeout=c.get("timeout_seconds", 180)
-            ) as r:
-                result = json.load(r)
+            from .inference import slot
+            with slot(self.c):
+                with urllib.request.urlopen(
+                    req, timeout=c.get("timeout_seconds", 180)
+                ) as r:
+                    result = json.load(r)
             s = (
                 result["message"]["content"]
                 if native
@@ -91,9 +93,10 @@ class Model:
                 "Model unavailable or invalid structured output; leaving mail unchanged"
             ) from e
 
-    def classify(self, m):
-        from .vision import enrich
-        m = enrich(m, self.c)
+    def classify(self, m, include_images=True):
+        if include_images:
+            from .vision import enrich
+            m = enrich(m, self.c)
         # Exact original-sender match; local configuration only, never email directives.
         profile = next((r for r in self.c.get("summary_profiles", [])
                         if r.get("sender") == m.get("original_sender", m["sender"])), {})

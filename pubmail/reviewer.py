@@ -158,14 +158,14 @@ def review_decisions(decisions,c,model,store):
         selected.append(d); task=classification_task(m,reason,c)
         task['data']['security_evidence']={'status':d['security'],'reason':d['security_reason']}
         tasks.append(task)
-        validators.append(lambda output,m=m: ReplayModel(c,output,model.local).classify(m))
+        validators.append(lambda output,m=m: ReplayModel(c,output,model.local).classify(m, include_images=False))
     outputs=queue.exchange(tasks,validators)
     from .core import security,preclassify
     for i,d in enumerate(selected):
         if i not in outputs:
             d['retry']=True
             continue
-        try: result=ReplayModel(c,outputs[i],model.local).classify(d['message'])
+        try: result=ReplayModel(c,outputs[i],model.local).classify(d['message'], include_images=False)
         except Error: continue
         d.update({k:result.get(k) for k in ('title','summary','topic','deadline','deadline_evidence','deadline_date')})
         sec,_,_=security(d['message'],c)

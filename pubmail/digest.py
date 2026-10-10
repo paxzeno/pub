@@ -276,11 +276,8 @@ def prepare(gmail, c, model, store):
         (items if sec == "verified" else flagged).append(d)
     if not items and not flagged:
         return None
-    # Bounded grouping; fallback is safe singletons, never omission.
-    try:
-        groups = model.groups(items)
-    except Error:
-        groups = [[i["id"]] for i in items]
+    # Sender grouping is deterministic in render; no semantic-model call needed.
+    groups = [[i["id"]] for i in items]
     id = str(uuid.uuid4())
     p = {
         "id": id,
@@ -390,10 +387,7 @@ def preview_plan(c, model, store, plan_id):
     p = json.loads(row[0])
     items = [d for d in p["decisions"] if d["action"] == "archive"]
     flagged = [d for d in p["decisions"] if d["action"] == "review"]
-    try:
-        groups = model.groups(items)
-    except Error:
-        groups = [[i["id"]] for i in items]
+    groups = [[i["id"]] for i in items]
     h, t, _ = render(c, items, groups, flagged, inline=True)
     prefix = store.root / "plans" / (plan_id + "-newsletter")
     private_write(str(prefix) + ".html", h)
