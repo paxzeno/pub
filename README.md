@@ -219,3 +219,15 @@ normal sender authentication and link checks still apply. Match exact domain
 boundaries, never brand words or lookalikes. Unknown and malformed links remain
 subject to security checks. No original Gmail message is edited. Profiles/relays
 do not confer trust. All external images remain blocked.
+
+## Extraction and reviewed exceptions
+Prefer the HTML body when present; retain image alt text in reading order and use
+actual HTML anchor URLs, not potentially broken links in a plain-text alternative.
+Never download images to extract alt text. Title-list profiles (`format: title_list`)
+require all extracted alt titles after `exclude_image_alts`; descriptions must be
+exact source quotes or explicitly absent. Failure blocks summary/digest generation.
+Exact-sender security exceptions may omit `omit_http_domains` (exact hosts) and
+`omit_mailto`; these URLs never become safe or clickable. A rewriting relay may
+use `operator_verified_original: true` with `original_domain` and a human reason
+only after explicit original-sender confirmation; relay authentication still applies.
+This is operator-vouched attribution, not cryptographic proof or blanket relay trust.

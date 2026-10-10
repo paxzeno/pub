@@ -23,6 +23,9 @@ security_exceptions:
     relay_domain: ''  # Exact authenticated relay domain, or empty for direct mail
     # For rewriting relays, add original_domain and require matching Gmail ARC evidence.
     # original_domain: shop.example
+    # operator_verified_original: true  # ONLY after explicit human confirmation
+    # omit_http_domains: [shop.example]  # Drop, never render these HTTP links
+    # omit_mailto: true
     link_domains: [shop.example, click.shop.example]
     reason: Verified this merchant's separate mailing and tracking domains
 # Normal links must match the sender's registrable domain. This map also checks
@@ -62,6 +65,8 @@ rollout:
 # First exact original-sender match wins. Formatting only; never grants trust.
 summary_profiles:
   - sender: releases@streaming.example
+    # format: title_list  # Enforce image-alt title coverage with source quotes
+    # exclude_image_alts: [Example Streaming]
     instructions: >-
       List every new film or series mentioned, one per line, with a tiny factual
       description if the email supplies one. Include release dates only if given.

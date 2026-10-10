@@ -23,11 +23,17 @@ class BodyParser(HTMLParser):
         super().__init__()
         self.text = []
         self.links = []
+        self.image_alts = []
         self.hidden = 0
 
     def handle_starttag(self, tag, attrs):
         if tag in ("script", "style"):
             self.hidden += 1
+        if tag == "img" and not self.hidden:
+            alt = (dict(attrs).get("alt") or "").strip()
+            if alt:
+                self.image_alts.append(alt)
+                self.text.append("\n[Image text: " + alt + "]\n")
         if tag == "a":
             v = dict(attrs).get("href", "")
             if v:
@@ -109,8 +115,8 @@ def normalize(raw, body_limit=24000):
     parser = BodyParser()
     for s in markup:
         parser.feed(s)
-    text = "\n".join(texts) or "".join(parser.text)
-    links = parser.links + re.findall(r'https?://[^\s<>"\)]+', text)
+    text = "".join(parser.text) if markup else "\n".join(texts)
+    links = parser.links if markup else re.findall(r'https?://[^\s<>"\)]+', text)
     unsub = re.findall(r"<(https://[^>]+)>", first("list-unsubscribe"))
     sender = parseaddr(first("from"))[1].lower()
     original = sender
@@ -127,6 +133,7 @@ def normalize(raw, body_limit=24000):
         sender_display=parseaddr(first("from"))[0],
         subject=first("subject"),
         body=text[:body_limit],
+        image_alts=list(dict.fromkeys(parser.image_alts)),
         original_html="\n".join(markup)[:200000],
         truncated=len(text) > body_limit,
         links=list(dict.fromkeys(links)),
@@ -186,13 +193,15 @@ def security(m, c):
         )
     if relay:
         expected = (ex or {}).get("original_domain", od if original != sender else "")
+        if not expected:
+            return "uncertain", "Original domain missing from relay exception", []
         # Gmail-validated ARC can preserve original domain authentication across
         # a rewriting relay. Alias local-parts are never decoded as identity proof.
         arc = next(
             (part for part in auth.split(";") if re.search(r"\barc=pass\b", part)), ""
         )
         origins = re.findall(r"fromdomain=([^\s;)]+)", arc)
-        if (
+        if not ex.get("operator_verified_original", False) and (
             not expected
             or not re.search(r"\bdmarc=pass\b", arc)
             or not any(registered(x) == registered(expected) for x in origins)
@@ -221,6 +230,16 @@ def security(m, c):
             continue
         h = host(url)
         if not h:
+            try:
+                parsed = urlsplit(url)
+                port = parsed.port
+            except ValueError:
+                return "uncertain", "Malformed URL", []
+            # Scoped omissions: never returned as renderable/unsubscribe URLs.
+            if ex and parsed.scheme == "mailto" and ex.get("omit_mailto"):
+                continue
+            if ex and parsed.scheme == "http" and parsed.hostname in ex.get("omit_http_domains", []) and not parsed.username and not parsed.password and port in (None, 80):
+                continue
             return "uncertain", "Link is non-HTTPS, malformed, or uses an unsupported scheme; not a sender-authentication failure", []
         if registered(h) != registered(od) and h not in allowed:
             return (
@@ -229,7 +248,8 @@ def security(m, c):
                 [],
             )
         safe.append(url)
-    return "verified", "Aligned sender and permitted HTTPS link domains", safe
+    reason = "Authenticated relay; operator-vouched original sender and permitted HTTPS domains" if relay and ex.get("operator_verified_original") else "Aligned sender and permitted HTTPS link domains"
+    return "verified", reason, safe
 
 
 def preclassify(m, c):
