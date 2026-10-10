@@ -373,3 +373,5 @@ Every source entry, including review items, shows `From: address` then `Date: yy
 Approved static-artwork paths may contain `%20` spaces. Other percent escapes, encoded separators/traversal, literal `..`, redirects and unapproved hosts/paths remain rejected. This is filename compatibility, not a broader CDN trust rule.
 
 Vision inputs smaller than 64 pixels on either axis are padded without rescaling or changing their source-image hash; this avoids Qwen image-processor errors on small logos. `image_loading.max_download_bytes` controls each approved asset download (default 3000000, maximum supported 50000000), independently of usage quotas. GIF loading currently extracts the first frame only; do not claim all animation frames were inspected.
+
+For visual-only title-list entries, descriptions must be supported by text from the same image evidence record. A quote appearing elsewhere in the email does not establish the association. Do not repeat the title as its own description; unsupported associations must be marked unverified.

@@ -55,3 +55,13 @@ class Vision(unittest.TestCase):
         with patch('pubmail.vision.enrich') as extraction:
             self.assertEqual(model.classify(m,include_images=False)['kind'],'keep')
             extraction.assert_not_called()
+
+    def test_visual_title_cannot_borrow_other_card_description(self):
+        from unittest.mock import Mock
+        c={'summary_profiles':[{'sender':'offers@example.com','format':'title_list','max_characters':1000}]}
+        m={'sender':'offers@example.com','original_sender':'offers@example.com','subject':'New','body':'Film One AN EXTENDED LOOK','timestamp':0,'visual_titles':['Film One'],'visual_evidence':[{'text':'Film One','titles':['Film One']}]}
+        model=Model(c)
+        model.ask=Mock(side_effect=[{'kind':'advertising','confidence':1,'title':'Films','summary':'Films','topic':'Films','deadline':None},{'items':[{'title':'Film One','description':'AN EXTENDED LOOK'}]}])
+        summary=model.classify(m)['summary']
+        self.assertIn('Description not verified from source.',summary)
+        self.assertNotIn('AN EXTENDED LOOK',summary)

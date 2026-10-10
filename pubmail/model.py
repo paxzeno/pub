@@ -176,6 +176,14 @@ class Model:
                 if desc is not None and (not isinstance(desc, str) or len(desc) > 600 or desc not in m["body"] or re.search(r'https?://|<[^>]+>', desc)):
                     desc = None
                     description_unverified = True
+                # Visual-only titles cannot borrow descriptions from unrelated cards.
+                if desc and title.casefold() in {t.casefold() for t in m.get('visual_titles', [])} and title.casefold() not in {t.casefold() for t in m.get('image_alts', [])}:
+                    norm=lambda value: re.sub(r'[^\w]', '', value.casefold())
+                    evidence=[e['text'] for e in m.get('visual_evidence', []) if title.casefold() in {t.casefold() for t in e.get('titles', [])}]
+                    if norm(desc)==norm(title):
+                        desc=None
+                    elif not any(desc in text for text in evidence):
+                        desc=None;description_unverified=True
                 lines.append("• " + title + " — " + (desc or ("Description not verified from source." if description_unverified else "No description supplied.")))
             d["summary"] = "\n".join(lines)
             if len(d["summary"]) > max_summary:
