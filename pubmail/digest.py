@@ -46,8 +46,11 @@ def render(c, items, groups, flagged, now=None, inline=False):
         title = lookup[g[0]]["message"]["original_sender"] if len(g) > 1 else lookup[g[0]]["title"]
         text += ["## " + title, ""]
         for mid in g:
-            i = lookup[mid]
+            i = dict(lookup[mid])
             m = i["message"]
+            if not i.get('deadline') and not i.get('deadline_date'):
+                from .timing import extract_offer_timing
+                i.update(extract_offer_timing(m.get('body','')))
             deadline = i.get("deadline")
             expired = False
             display = ""
@@ -60,7 +63,7 @@ def render(c, items, groups, flagged, now=None, inline=False):
             if not deadline and i.get("deadline_date"):
                 day = date.fromisoformat(i["deadline_date"])
                 expired = day < now.astimezone(ZoneInfo(c["timezone"])).date()
-                display = day.strftime("%d %b %Y") + " (time not supplied)"
+                display = day.strftime("%d %b %Y") + " (date-only badge; see source for time)"
                 deadline = i["deadline_date"]
             from .timing import extract_event_timing
             event = extract_event_timing(m.get("body", ""), m.get("subject", ""))

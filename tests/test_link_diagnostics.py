@@ -51,3 +51,8 @@ class LinkDiagnostics(unittest.TestCase):
         for link in ['www.shop.example.evil.example','shop-example.com','user@shop.example','shop.example:443','//shop.example','shop.example\\@evil.example','http://shop.example']:
             m=normalize(raw());m['links']=[link]
             self.assertEqual(security(m,conf('/tmp'))[0],'uncertain',link)
+
+    def test_explicit_single_offer_cutoff_is_retained(self):
+        from pubmail.timing import extract_offer_timing
+        self.assertEqual(extract_offer_timing('Offer ends September 13, 2026.')['deadline_date'],'2026-09-13')
+        self.assertEqual(extract_offer_timing('Offer ends September 13.'),{})

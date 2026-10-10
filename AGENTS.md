@@ -347,3 +347,7 @@ not sender trust exceptions or advertising-classification approvals.
 Plan previews recheck link security against current rules for both normal and
 review candidates. Passing candidates can receive rich presentation; this does
 not edit the stored plan, approve archiving or set newsletter-delivered labels.
+
+Explicit single-date “Offer ends/expires Month Day, Year” cutoffs also get
+EXPIRED/deadline badges, including cached summaries. Date-only extraction does
+not invent a time; retain any source-stated time in the summary/original.

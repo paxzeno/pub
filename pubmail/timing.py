@@ -13,6 +13,15 @@ def extract_offer_timing(body):
     # Require an explicit offer period and year, not an unrelated publication date.
     pattern = r'(?:offer valid|promotional period|valid from)[^.\n]{0,120}?' + MONTH + r'\s+(\d{1,2})\s*[–—-]\s*(\d{1,2}),?\s+(20\d{2})'
     matches = list(re.finditer(pattern, body, re.I))
+    if not matches:
+        singles = list(re.finditer(r'offer (?:ends|expires)\s+' + MONTH + r'\s+(\d{1,2}),?\s+(20\d{2})\b', body, re.I))
+        if len(singles) == 1:
+            hit = singles[0]
+            try:
+                day = date(int(hit[3]), MONTHS[hit[1].lower()], int(hit[2]))
+            except ValueError:
+                return {}
+            return {'deadline':None,'deadline_date':day.isoformat(),'deadline_evidence':hit[0]}
     if len(matches) != 1:
         return {}
     hit = matches[0]
