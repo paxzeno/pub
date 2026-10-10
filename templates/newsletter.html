@@ -29,7 +29,7 @@
   <p style="margin:0 0 8px;font-size:13px;line-height:1.5;letter-spacing:2px;color:#d8eba4">THE WEEKLY EDIT</p>
   <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#c9cbc4">{{ date }}</p>
   <h1 class="hero-title" style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:36px;font-weight:bold;letter-spacing:-1px;line-height:1.2;overflow-wrap:break-word">Your week.<br>A little less inbox.</h1>
-  <p style="margin:20px 0 0;font-size:16px;line-height:1.65;color:#e1e3dc">{{ count }} messages, gathered by topic.<br>Read what interests you. Leave the rest.</p>
+  <p style="margin:20px 0 0;font-size:16px;line-height:1.65;color:#e1e3dc">{{ count }} messages, gathered by sender.<br>Read what interests you. Leave the rest.</p>
 </td></tr>
 <tr><td height="20" style="font-size:0;line-height:0">&nbsp;</td></tr>
 {% for card in cards %}
@@ -48,6 +48,7 @@
   {% endif %}
   {% for item in card["items"] %}
   <div{% if not loop.first %} style="border-top:1px solid #e7e8e2;padding-top:24px;margin-top:24px"{% endif %}>
+    {% if card.sources > 1 %}<h3 style="font-size:20px;line-height:1.4;margin:0 0 12px">{{ item.title }}</h3>{% endif %}
     <p style="font-size:14px;line-height:1.6;color:#62665d;margin:0 0 10px;overflow-wrap:anywhere;word-break:break-word">From {{ item.sender }}</p>
     {% for block in item.summary_blocks %}
     {% if block.bullet %}

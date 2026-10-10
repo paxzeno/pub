@@ -33,7 +33,12 @@ Read README.md, SECURITY.md and this file before operating this repository.
 ## Digest
 - Eligibility: adds without adds/newsletter, regardless of whether subsequently read.
 - Include approved review-queue items as text-only, without sender links or images.
-- Group by specific topic/event/product/campaign, never just domain.
+- Presentation groups normal messages by exact verified original sender: one
+  representative original-email thumbnail per sender, even across different topics.
+  Keep each source's heading, summary, timing badges and original link separate.
+  Semantic topic grouping may order entries, but must not create duplicate sender
+  cards or merge away distinct offers. Never group by display name, forwarding
+  service or shared mailing-provider domain. Flagged sources stay text-only.
 - Preserve source-specific offers and deadlines. Do not invent dates; expired dates show
   explicit EXPIRED text and red colour in HTML.
 - Generate all HTML from our autoescaped template, never original email HTML.

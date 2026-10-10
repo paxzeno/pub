@@ -315,3 +315,8 @@ Research-backed common tracker exclusions and sources are in
 `ignored_tracking_domain_suffixes` supports strict subdomains of documented
 tracking-only infrastructure. This explicit suffix field does not accept substring
 or wildcard patterns, and must never contain general hosting/provider roots.
+
+Newsletter layout uses one thumbnail/card per exact verified original sender.
+Different campaigns retain separate headings, summaries, timing and original links
+within that card. Topic grouping controls ordering, not sender-card boundaries.
+Flagged messages remain in the separate text-only review section.

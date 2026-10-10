@@ -320,6 +320,26 @@ class Case(unittest.TestCase):
             self.assertIn('23 Aug 2026', t)
             self.assertNotIn('EXPIRED', t)
 
+    def test_sender_card_keeps_different_topics_and_links(self):
+        first = self.items()[0]
+        second = copy.deepcopy(first)
+        second.update(id='a2', title='Different campaign', summary='Separate details', topic='Another topic')
+        second['message'].update(id='a2', thread_id='thread-two')
+        third = copy.deepcopy(first)
+        third.update(id='a3', title='Other sender')
+        third['message'].update(id='a3', original_sender='another@shop.example')
+        with patch('pubmail.thumbnail.screenshot', return_value=b'png') as screenshot:
+            h, t, images = digest.render(self.c, [first,second,third], [['a1'],['a3'],['a2']], [])
+        self.assertEqual(len(images), 2)
+        self.assertEqual(screenshot.call_count, 2)
+        self.assertIn('Different campaign', h)
+        self.assertIn('Separate details', t)
+        self.assertIn('thread-two', h)
+        self.assertEqual(h.count('Read original email'), 3)
+        self.assertLess(h.index('Separate details'), h.index('Other sender'))
+        with self.assertRaises(Error):
+            digest.render(self.c, [first,second], [['a1']], [])
+
     def test_suspicious_no_links(self):
         h, t, imgs = digest.render(self.c, [], [], self.items())
         self.assertNotIn("href=", h)

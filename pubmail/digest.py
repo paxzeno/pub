@@ -28,12 +28,22 @@ def summary_blocks(summary):
 def render(c, items, groups, flagged, now=None, inline=False):
     now = now or datetime.now(ZoneInfo(c["timezone"]))
     lookup = {i["id"]: i for i in items}
+    # Topic groups determine ordering, not visual card boundaries. Each verified
+    # original sender gets one card; keep every source as a separate entry.
+    flat = [mid for group in groups for mid in group]
+    if sorted(flat) != sorted(lookup) or len(lookup) != len(items):
+        raise Error("Rendering groups omitted, invented or repeated messages")
+    sender_groups = {}
+    for mid in flat:
+        sender = lookup[mid]["message"].get("original_sender", "").strip().casefold()
+        sender_groups.setdefault(sender or mid, []).append(mid)
+    groups = list(sender_groups.values())
     cards = []
     images = {}
     text = [c["newsletter"]["subject"], now.strftime("%d %B %Y"), ""]
     for n, g in enumerate(groups):
         entries = []
-        title = lookup[g[0]]["title"]
+        title = lookup[g[0]]["message"]["original_sender"] if len(g) > 1 else lookup[g[0]]["title"]
         text += ["## " + title, ""]
         for mid in g:
             i = lookup[mid]
@@ -74,6 +84,7 @@ def render(c, items, groups, flagged, now=None, inline=False):
                 original = "https://mail.google.com/mail/u/?authuser=" + quote(c["account"], safe="") + "#all/" + quote(m.get("thread_id") or m["id"], safe="")
             entries.append(
                 dict(
+                    title=i["title"],
                     summary=i["summary"],
                     summary_blocks=summary_blocks(i["summary"]),
                     deadline=deadline,
@@ -86,6 +97,8 @@ def render(c, items, groups, flagged, now=None, inline=False):
                     unsubscribe=unsub,
                 )
             )
+            if len(g) > 1:
+                text += ["### " + i["title"]]
             text += [i["summary"]]
             if event:
                 text += ["EVENT " + event_status + ": " + event_display]
