@@ -22,6 +22,8 @@ def validate_config(c):
             raise ValueError()
         if connection['processing'] == 'remote' and not chain['review_packet'].get('allow_remote_processing'):
             raise Error('Senior remote processing requires explicit consent')
+        if type(chain['batching'].get('enforce_limits', True)) is not bool:
+            raise ValueError()
         for key, low, high in [('max_messages',1,100), ('min_interval_minutes',0,720), ('max_batches_per_day',1,100)]:
             value = chain['batching'][key]
             if type(value) is not int or not low <= value <= high: raise ValueError()
@@ -65,7 +67,7 @@ class ReviewQueue:
         now = time.time()
         batching = self.chain['batching']
         count,last = db.execute('SELECT count(*), max(created) FROM senior_batches WHERE created>?',(now-86400,)).fetchone()
-        can_run = count < batching['max_batches_per_day'] and (last is None or now-last >= batching['min_interval_minutes']*60)
+        can_run = not batching.get('enforce_limits', True) or (count < batching['max_batches_per_day'] and (last is None or now-last >= batching['min_interval_minutes']*60))
         if pending and can_run:
             chosen = pending[:batching['max_messages']]
             batch = str(uuid.uuid4())

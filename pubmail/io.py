@@ -108,6 +108,9 @@ def load_config(path):
 
 
 def policy_hash(c):
+    # Scheduling toggles must not create fresh reviewer identities/retry attempts.
+    c = json.loads(json.dumps(c))
+    c.get('agent_chain', {}).get('batching', {}).pop('enforce_limits', None)
     return hashlib.sha256(json.dumps({"policy_version": 4, "config": c}, sort_keys=True).encode()).hexdigest()
 
 

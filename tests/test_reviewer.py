@@ -116,3 +116,28 @@ class ReviewerTests(unittest.TestCase):
             self.q.exchange([self.task],[lambda o:None])
             self.q.exchange([dict(self.task,reason='different')],[lambda o:None])
             self.assertEqual(call.call_count,1)
+
+    def test_calibration_bypasses_quotas_preserves_dedup(self):
+        self.c['agent_chain']['batching'].update(min_interval_minutes=720,max_batches_per_day=1)
+        with patch('pubmail.reviewer.run',side_effect=self.response) as call:
+            self.q.exchange([self.task],[lambda o:None])
+            other=dict(self.task,reason='other')
+            self.q.exchange([other],[lambda o:None])
+            self.assertEqual(call.call_count,1)
+            self.c['agent_chain']['batching']['enforce_limits']=False
+            self.q.exchange([self.task,other],[lambda o:None]*2)
+            self.assertEqual(call.call_count,2)
+            self.c['agent_chain']['batching']['enforce_limits']=True
+            self.q.exchange([dict(self.task,reason='third')],[lambda o:None])
+            self.assertEqual(call.call_count,2)
+
+    def test_calibration_toggle_does_not_retry_failed_attempt(self):
+        with patch('pubmail.reviewer.run',return_value='{}') as call:
+            self.q.exchange([self.task],[lambda o:None])
+            self.c['agent_chain']['batching']['enforce_limits']=False
+            self.q.exchange([self.task],[lambda o:None])
+            self.assertEqual(call.call_count,1)
+
+    def test_enforcement_switch_boolean_only(self):
+        self.c['agent_chain']['batching']['enforce_limits']='false'
+        with self.assertRaises(Error): validate_config(self.c)

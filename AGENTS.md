@@ -361,3 +361,6 @@ association, not only attachment counts. A browser preview alone cannot prove a 
 client will display the newly transmitted image.
 
 Keep inline Content-ID values short ASCII msg-ids (128-bit content-derived identifiers), so the complete header stays below the SMTP folding limit. Verify serialized RFC 5322 bytes contain a literal angle-bracket Content-ID, never RFC 2047 encoded words. Decoded attachment metadata alone can hide a broken wire header. Check both Sent and received copies when diagnosing rendering failures.
+
+### Calibration without review quotas
+Set `agent_chain.batching.enforce_limits: false` to bypass the configured daily review quota and cooldown without deleting their values. Missing switch defaults to true for existing installations. Agree on operational quotas with the owner after calibration; do not silently re-enable them. Batch size and resumable image-pass sizes remain work chunking, not daily quotas. Connection timeouts, payload-size constraints, authentication, validation, serial inference and ambiguous-attempt/delivery deduplication remain active. Toggling enforcement preserves reviewer identities and never resets attempts or automatically retries ambiguous work.

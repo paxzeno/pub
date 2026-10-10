@@ -123,6 +123,7 @@ agent_chain:
     - invalid_grouping
     - model_failure
   batching:
+    enforce_limits: true  # false during calibration: bypass cooldown and daily quota
     max_messages: 20
     min_interval_minutes: 60  # Cooldown: integer 0..720 (12h); 0 disables the delay
     max_batches_per_day: 4
