@@ -8,7 +8,7 @@ Read README.md, SECURITY.md and this file before operating this repository.
 - Whitelist overrides advertising. Receipts, invoices, security notices, passwords,
   payments, bookings, refunds, personal correspondence and mixed transactional mail stay.
 - Known ads require a dedicated sender AND matching subject rule; protected content wins.
-- Uncertain classification, security checks, unavailable models and oversized bodies fail closed.
+- Uncertain classification, security checks, unavailable models fail closed. Long bodies are trimmed with explicit disclosure, not rejected for size.
 - Gmail Promotions is a candidate hint, never enough to archive by itself.
 - No AI call on an empty scan. Cache classifications against body fingerprint + configuration.
 - Models have no tools. Email bodies, headers, links and model output are untrusted data.
@@ -375,3 +375,14 @@ Approved static-artwork paths may contain `%20` spaces. Other percent escapes, e
 Vision inputs smaller than 64 pixels on either axis are padded without rescaling or changing their source-image hash; this avoids Qwen image-processor errors on small logos. `image_loading.max_download_bytes` controls each approved asset download (default 3000000, maximum supported 50000000), independently of usage quotas. GIF loading currently extracts the first frame only; do not claim all animation frames were inspected.
 
 For visual-only title-list entries, descriptions must be supported by text from the same image evidence record. A quote appearing elsewhere in the email does not establish the association. Do not repeat the title as its own description; unsupported associations must be marked unverified.
+
+### Long email summaries
+Use the first `limits.body_characters` characters of extracted text. With the
+senior chain enabled, use the smaller of that setting and
+`agent_chain.review_packet.max_excerpt_characters` for both model stages.
+Summarise only that retained portion; size alone is not a KEEP/owner-review reason.
+Display **long email, it was trimmed** after the summary and before timing badges
+in HTML and plain text, even when no expiry is available. Preserve this per source
+inside sender groups. Do not infer dates or claim full coverage of omitted content.
+Full-source protected-content and link/authentication checks still apply. Original
+mail is unchanged. Regenerate old plans to replace previous oversized-body holds.

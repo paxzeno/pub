@@ -137,7 +137,7 @@ class Store:
     def put_decision(self, m, c, d):
         self.db.execute(
             "INSERT OR REPLACE INTO decisions VALUES(?,?,?,?)",
-            (m["id"], m["headers_hash"], policy_hash(c), json.dumps(d)),
+            (m["id"], m["headers_hash"], policy_hash(c), json.dumps(dict(d, text_contract_version=1))),
         )
         self.db.commit()
 
@@ -146,7 +146,8 @@ class Store:
             "SELECT body FROM decisions WHERE id=? AND fingerprint=? AND policy=?",
             (m["id"], m["headers_hash"], policy_hash(c)),
         ).fetchone()
-        return json.loads(r[0]) if r else None
+        decision = json.loads(r[0]) if r else None
+        return decision if decision and decision.get("text_contract_version") == 1 else None
 
     def delivery(self, id, status, body):
         self.db.execute(

@@ -46,6 +46,7 @@ def decide(m, c, model, store):
                             "deadline",
                             "deadline_evidence",
                             "deadline_date",
+                            "text_trimmed",
                         )
                     }
                 )

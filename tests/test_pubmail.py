@@ -153,9 +153,9 @@ class Case(unittest.TestCase):
             "keep",
         )
 
-    def test_large_body_kept(self):
+    def test_large_body_trimmed_not_rejected(self):
         self.assertEqual(
-            preclassify(normalize(raw(body="a" * 100), 20), self.c)[0], "keep"
+            preclassify(normalize(raw(body="a" * 100), 20), self.c)[0], "advertising"
         )
 
     def test_unknown_not_candidate(self):

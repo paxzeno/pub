@@ -47,7 +47,9 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
         text += ["## " + title, ""]
         for mid in g:
             i = dict(lookup[mid])
-            m = i["message"]
+            from .text_input import bounded_message
+            m = bounded_message(i["message"], c)
+            trimmed = bool(i.get("text_trimmed") or m.get("text_trimmed"))
             if not i.get('deadline') and not i.get('deadline_date'):
                 from .timing import extract_offer_timing
                 i.update(extract_offer_timing(m.get('body','')))
@@ -102,6 +104,7 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
                 dict(
                     title=i["title"],
                     summary=i["summary"],
+                    text_trimmed=trimmed,
                     summary_blocks=summary_blocks(i["summary"]),
                     deadline=deadline,
                     expired=expired,
@@ -118,6 +121,8 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
             if len(g) > 1:
                 text += ["### " + i["title"]]
             text += [i["summary"]]
+            if trimmed:
+                text += ["long email, it was trimmed"]
             if relative_notice:
                 text += ["TIME-SENSITIVE: " + relative_notice]
             if event:
@@ -152,10 +157,12 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
     if flagged:
         text += ["## SET ASIDE FOR YOUR REVIEW (no active links)", ""]
     for i in flagged:
-        m = i["message"]
+        from .text_input import bounded_message
+        m = bounded_message(i["message"], c)
         f = dict(
             title=safe_text(i["title"]),
             summary=safe_text(i["summary"]),
+            text_trimmed=bool(i.get("text_trimmed") or m.get("text_trimmed")),
             sender=safe_text(m["original_sender"]),
             received=datetime.fromtimestamp(
                 m["timestamp"], ZoneInfo(c["timezone"])
@@ -167,6 +174,7 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
         text += [
             f["title"],
             f["summary"],
+            *(["long email, it was trimmed"] if f["text_trimmed"] else []),
             "From: " + f["sender"],
             "Date: " + f["received"],
             "Reason: " + f["reason"],
@@ -275,6 +283,7 @@ def prepare(gmail, c, model, store):
                         "deadline",
                         "deadline_evidence",
                         "deadline_date",
+                        "text_trimmed",
                     )
                 }
             )
@@ -412,7 +421,7 @@ def preview_plan(c, model, store, plan_id):
     for item in items:
         result = model.classify(item['message'])
         item.update({key: result.get(key) for key in (
-            'title', 'summary', 'topic', 'deadline', 'deadline_date', 'deadline_evidence')})
+            'title', 'summary', 'topic', 'deadline', 'deadline_date', 'deadline_evidence','text_trimmed')})
         sec, reason, urls = security(item['message'], c)
         if sec != 'verified':
             raise Error('Preview source security changed; generate a fresh plan')

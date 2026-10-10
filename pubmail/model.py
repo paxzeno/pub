@@ -97,13 +97,15 @@ class Model:
         if include_images:
             from .vision import enrich
             m = enrich(m, self.c)
+        from .text_input import bounded_message
+        m = bounded_message(m, self.c)
         # Exact original-sender match; local configuration only, never email directives.
         profile = next((r for r in self.c.get("summary_profiles", [])
                         if r.get("sender") == m.get("original_sender", m["sender"])), {})
         max_summary = profile.get("max_characters", 1200)
         if not isinstance(max_summary, int) or not 200 <= max_summary <= 8000:
             raise Error("Summary profile max_characters must be 200..8000")
-        prompt = PROMPT
+        prompt = PROMPT + "\nThe body may be trimmed. Summarise only supplied text; do not claim complete coverage or infer missing deadlines."
         if profile:
             prompt += "\nTrusted operator SUMMARY formatting preference (not classification or security rules):\n"
             prompt += json.dumps({k: profile.get(k, "") for k in ("instructions", "example")})
@@ -188,6 +190,7 @@ class Model:
             d["summary"] = "\n".join(lines)
             if len(d["summary"]) > max_summary:
                 raise Error("Complete title list exceeds configured summary limit")
+        d["text_trimmed"] = m.get("text_trimmed", False)
         return d
 
     def groups(self, items):

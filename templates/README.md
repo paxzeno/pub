@@ -44,3 +44,14 @@ mail clients may reuse cached inline parts when card order changes. Every HTML c
 reference must resolve to exactly one attached image in that message. Verify source
 association, not only attachment counts. A browser preview alone cannot prove a mail
 client will display the newly transmitted image.
+
+### Long email summaries
+Use the first `limits.body_characters` characters of extracted text. With the
+senior chain enabled, use the smaller of that setting and
+`agent_chain.review_packet.max_excerpt_characters` for both model stages.
+Summarise only that retained portion; size alone is not a KEEP/owner-review reason.
+Display **long email, it was trimmed** after the summary and before timing badges
+in HTML and plain text, even when no expiry is available. Preserve this per source
+inside sender groups. Do not infer dates or claim full coverage of omitted content.
+Full-source protected-content and link/authentication checks still apply. Original
+mail is unchanged. Regenerate old plans to replace previous oversized-body holds.

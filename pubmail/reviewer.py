@@ -53,6 +53,11 @@ class ReviewQueue:
         validate_config(self.c)
         db = self.store.db
         policy = policy_hash(self.c)
+        # Bound source text before hashing or dispatch, including direct callers.
+        from .text_input import bounded_message
+        tasks = [dict(t, data=bounded_message(t['data'], self.c))
+                 if isinstance(t.get('data'), dict) and isinstance(t['data'].get('body'), str)
+                 else t for t in tasks]
         ids = []
         for task in tasks:
             encoded = json.dumps(task, sort_keys=True, ensure_ascii=False)
@@ -60,7 +65,7 @@ class ReviewQueue:
             ids.append(ident)
             db.execute('INSERT OR IGNORE INTO senior_items(id,policy,task,status) VALUES(?,?,?,?)',
                        (ident, policy, encoded, 'pending'))
-            if len(json.dumps(task.get('data',{}),ensure_ascii=False)) > self.chain['review_packet'].get('max_excerpt_characters',6000):
+            if not isinstance(task.get('data'), dict) and len(json.dumps(task.get('data',{}),ensure_ascii=False)) > self.chain['review_packet'].get('max_excerpt_characters',6000):
                 db.execute("UPDATE senior_items SET status='needs_owner' WHERE id=? AND status='pending'",(ident,))
         db.commit()
         pending = [(i,t) for i,t in zip(ids,tasks) if db.execute('SELECT status FROM senior_items WHERE id=?',(i,)).fetchone()[0] == 'pending']
@@ -135,9 +140,11 @@ class ReplayModel(Model):
 
 
 def classification_task(m, reason, c):
+    from .text_input import bounded_message
+    m = bounded_message(m, c)
     profile=next((p for p in c.get('summary_profiles',[]) if p.get('sender')==m.get('original_sender',m['sender'])),{})
     prompt=PROMPT+'\nHonour this trusted summary preference: '+json.dumps(profile)
-    return {'reason':reason,'prompt':prompt,'data':{k:m[k] for k in ('id','subject','sender','timestamp','body','headers_hash') if k in m}}
+    return {'reason':reason,'prompt':prompt,'data':{k:m[k] for k in ('id','subject','sender','timestamp','body','headers_hash','text_trimmed') if k in m}}
 
 
 def review_decisions(decisions,c,model,store):
@@ -154,9 +161,6 @@ def review_decisions(decisions,c,model,store):
         elif d['action']=='review': reason='sender_or_link_uncertainty'
         if not reason or reason not in queue.chain.get('escalate_on',[]): continue
         m=d['message']
-        # No truncated evidence: retain oversized input for owner review instead.
-        if len(m['body'])>queue.chain['review_packet'].get('max_excerpt_characters',6000):
-            d['senior_review']='needs_owner: source exceeds review limit'; continue
         selected.append(d); task=classification_task(m,reason,c)
         task['data']['security_evidence']={'status':d['security'],'reason':d['security_reason']}
         tasks.append(task)
@@ -169,7 +173,7 @@ def review_decisions(decisions,c,model,store):
             continue
         try: result=ReplayModel(c,outputs[i],model.local).classify(d['message'], include_images=False)
         except Error: continue
-        d.update({k:result.get(k) for k in ('title','summary','topic','deadline','deadline_evidence','deadline_date')})
+        d.update({k:result.get(k) for k in ('title','summary','topic','deadline','deadline_evidence','deadline_date','text_trimmed')})
         sec,_,_=security(d['message'],c)
         advertising=result['kind']=='advertising' and result['confidence']>=c['model'].get('confidence_threshold',.98)
         d['action']='archive' if advertising and sec=='verified' and preclassify(d['message'],c)[0]!='keep' else ('review' if advertising and sec!='verified' else 'keep')
@@ -189,7 +193,6 @@ class EscalatingModel(Model):
         except Error:
             if 'model_failure' not in self.reviewer.chain.get('escalate_on',[]): raise
             task=classification_task(m,'model_failure',self.c)
-            if len(m['body'])>self.reviewer.chain.get('review_packet',{}).get('max_excerpt_characters',6000): raise
             validate=lambda output: ReplayModel(self.c,output,self.local).classify(m)
             out=self.reviewer.exchange([task],[validate])
             if 0 not in out: raise Error('Senior review pending, unavailable or needs owner')

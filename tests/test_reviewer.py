@@ -80,12 +80,13 @@ class ReviewerTests(unittest.TestCase):
         with patch('pubmail.reviewer.run',side_effect=reply):
             self.assertEqual(self.q.exchange([self.task],[lambda o:None]),{})
             self.assertEqual(self.q.status(),{'needs_owner':1})
-    def test_oversized_not_sent(self):
-        with patch('pubmail.reviewer.run') as call:
+    def test_oversized_trimmed_and_sent(self):
+        with patch('pubmail.reviewer.run', side_effect=self.response) as call:
             task=dict(self.task,data={'body':'x'*7000})
-            self.assertEqual(self.q.exchange([task],[lambda o:None]),{})
-            call.assert_not_called()
-            self.assertEqual(self.q.status(),{'needs_owner':1})
+            self.assertEqual(self.q.exchange([task],[lambda o:None]),{0:{'ok':True}})
+            data=json.loads(call.call_args.kwargs['input'])['items'][0]['data']
+            self.assertEqual(len(data['body']),6000)
+            self.assertTrue(data['text_trimmed'])
     def test_batch_respects_security_and_protected_content(self):
         model=EscalatingModel(self.c,self.store)
         m={'id':'test','subject':'Receipt','sender':'billing@example.com','timestamp':1,'body':'Receipt received.','headers_hash':'abc'}

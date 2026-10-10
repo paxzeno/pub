@@ -138,6 +138,7 @@ def normalize(raw, body_limit=24000):
         image_alts=list(dict.fromkeys(parser.image_alts)),
         original_html="\n".join(markup)[:200000],
         truncated=len(text) > body_limit,
+        protected_content=bool(PROTECTED.search(first("subject") + "\n" + text)),
         links=list(dict.fromkeys(links)),
         unsubscribe=unsub,
         auth=headers.get("authentication-results", []),
@@ -281,9 +282,7 @@ def preclassify(m, c):
         or domain(m["sender"]) in w.get("domains", [])
     ):
         return "keep", "Whitelist"
-    if m.get("truncated"):
-        return "keep", "Body exceeds review limit"
-    if PROTECTED.search(m["subject"] + "\n" + m["body"]):
+    if m.get("protected_content") or PROTECTED.search(m["subject"] + "\n" + m["body"]):
         return "keep", "Protected transactional/security content"
     for r in c.get("advertising", []):
         if r.get("sender") == m["original_sender"] and re.search(

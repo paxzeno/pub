@@ -47,7 +47,7 @@ limits:
   week_messages: 200
   hourly_messages: 100
   digest_messages: 200
-  body_characters: 24000
+  body_characters: 24000  # Trim model input; disclose in each affected newsletter entry.
 newsletter:
   format: multipart  # html | text | multipart
   subject: Your weekly reading list
@@ -136,7 +136,7 @@ agent_chain:
     max_hops: 2  # local -> senior -> owner; no loops
   review_packet:
     include: [reason, source_excerpt, authentication_evidence, proposed_decision]
-    max_excerpt_characters: 6000
+    max_excerpt_characters: 6000  # With review enabled, use the smaller text bound for both stages.
     email_content_is_untrusted: true
     allow_remote_processing: false  # Separate opt-in if senior uses a cloud model
   decisions:
