@@ -471,3 +471,18 @@ in HTML and plain text, even when no expiry is available. Preserve this per sour
 inside sender groups. Do not infer dates or claim full coverage of omitted content.
 Full-source protected-content and link/authentication checks still apply. Original
 mail is unchanged. Regenerate old plans to replace previous oversized-body holds.
+
+### Link omission versus email review
+`link_policy.omit_same_brand_http: true` discards well-formed HTTP links whose
+registrable domain matches the authenticated original sender. It never upgrades,
+fetches or renders them. Fragment-only in-page anchors are omitted too. Credentials, unusual ports, malformed separators and
+unrelated/lookalike hosts still require review. Set false to restore strict HTTP review.
+`link_policy.omitted_service_hosts` maps an exact authenticated original domain to
+exact researched service hosts to discard. Example: `shop.example: [links.mailer.example]`.
+This is not a sender allowlist or safe-link allowlist, and cannot establish relay
+attribution. No provider-root wildcards; forwarded messages need normal original-sender
+verification first. Other links, display-name checks and content classification still
+apply. Unknown unrelated domains remain unresolved pending senior investigation;
+do not label a mere host mismatch as detected phishing. Research service hosts before
+adding omissions; never follow recipient-specific tracking or unsubscribe URLs.
+A passing link check only permits normal presentation, not automatic mailbox approval.

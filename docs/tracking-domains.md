@@ -64,3 +64,34 @@ match the suffix rule. Userinfo, malformed URLs and unusual ports are never exem
 Remaining links and sender/relay authentication still undergo normal checks.
 Provider changes should be researched before expanding this list. Never automatically
 promote a model guess into persistent trust or treat a tracker as a safe redirect.
+
+## Authenticated-sender service omissions (2026-10-10)
+
+Service omissions are separate from global tracker exclusions. Local deployments
+may pin observed exact service hosts to an authenticated original sender domain.
+The public sample uses fictional domains. These rules REMOVE links, not approve
+redirect destinations, establish sender identity or automatically archive messages.
+
+- Adobe documents `*.adobe-campaign.com` as Campaign branding infrastructure,
+  not exclusively tracking: [configuration guidelines](https://experienceleague.adobe.com/en/docs/campaign-standard/using/administrating/about-configuration-guidelines).
+  Therefore use observed exact hosts scoped to their sender, not a global suffix.
+- HubSpot documents `hubspotemail.net` as email delivery infrastructure:
+  [delivery troubleshooting](https://knowledge.hubspot.com/marketing-email/understand-why-contacts-didn-t-receive-marketing-emails).
+  Its community describes `hubspotlinks.com` click rewriting:
+  [tracking discussion](https://community.hubspot.com/t/tracking-causes-issues-with-links-on-buttons/129315/2).
+  These support service attribution, not trust in every campaign or destination.
+- GitHub's `github.media` association has historical ownership and email evidence
+  ([historical record](https://www.spam.org/complaint?uid=C-GITHUB-COM-1NNKF0Q8BL))
+  plus reported support confirmation in a
+  [community discussion](https://github.com/orgs/community/discussions/173822).
+  No official documentation declaration was found. Use only exact observed hosts
+  under authenticated GitHub-origin mail; do not claim universal verified ownership.
+
+No recipient-specific link was opened during this research. Unknown domains still
+require investigation; a host mismatch alone is not a phishing verdict.
+
+- Insider documents `mail.useinsider.com` as campaign/email infrastructure:
+  [campaign creation](https://academy.useinsider.com/create-email-campaigns),
+  [API documentation](https://developers.insiderone.com/).
+  This is not evidence that every path is a tracker. Pin an omission to the exact
+  authenticated sender domain; do not add a global trusted-link exception.

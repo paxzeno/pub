@@ -59,6 +59,9 @@ def domain(address):
 
 
 def host(url):
+    # Do not let urlsplit's normalisation hide deceptive separators/control bytes.
+    if not isinstance(url, str) or any(ch.isspace() or ord(ch) < 32 for ch in url) or "\\" in url:
+        return ""
     try:
         p = urlsplit(url)
         if p.scheme != "https" or p.username or p.password or p.port not in (None, 443):
@@ -238,17 +241,27 @@ def security(m, c):
         ):
             return "suspicious", "Display-name brand and sender domain disagree", []
     allowed = set(ex.get("link_domains", []) if ex else [])
+    link_policy = c.get("link_policy", {})
+    omitted_services = set(link_policy.get("omitted_service_hosts", {}).get(od, []))
+    omitted_count = 0
     safe = []
     for url in links:
         if discard(url, original):
             continue
         h = host(url)
+        if h and h in omitted_services:
+            omitted_count += 1
+            continue
         if not h:
             try:
                 parsed = urlsplit(url)
                 port = parsed.port
             except ValueError:
                 return "uncertain", "Malformed URL", []
+            # In-page anchors have no external destination. Omit them, never render.
+            if not parsed.scheme and not parsed.netloc and not parsed.path and not parsed.query and url.startswith("#"):
+                omitted_count += 1
+                continue
             # Contact actions are not web destinations. Never render or activate them.
             if parsed.scheme.lower() == "mailto":
                 continue
@@ -259,6 +272,15 @@ def security(m, c):
             ):
                 bare = host("https://" + url)
                 if bare and (bare == od or bare.endswith("." + od) or registered(bare) == registered(od)):
+                    continue
+            # Omit rather than upgrade/follow same-brand HTTP. Validate the URL
+            # using the HTTPS parser only to inspect its authority, never to visit it.
+            if parsed.scheme == "http" and link_policy.get("omit_same_brand_http", True):
+                authority_host = host("https://" + url[len("http://"):]) if url.startswith("http://") and port in (None, 80) else ""
+                if port == 80:
+                    authority_host = host("https://" + parsed.netloc.removesuffix(":80") + parsed.path + ("?" + parsed.query if parsed.query else "")) if not any(ch.isspace() or ord(ch)<32 for ch in url) and "\\" not in url else ""
+                if authority_host and (authority_host == od or authority_host.endswith("." + od) or registered(authority_host) == registered(od)):
+                    omitted_count += 1
                     continue
             if ex and parsed.scheme == "http" and parsed.hostname in ex.get("omit_http_domains", []) and not parsed.username and not parsed.password and port in (None, 80):
                 continue
@@ -271,6 +293,8 @@ def security(m, c):
             )
         safe.append(url)
     reason = "Authenticated relay; operator-vouched original sender and permitted HTTPS domains" if relay and (ex or {}).get("operator_verified_original") else "Aligned sender and permitted HTTPS link domains"
+    if omitted_count:
+        reason += f"; omitted {omitted_count} unsuitable/service links (not approved destinations)"
     return "verified", reason, safe
 
 

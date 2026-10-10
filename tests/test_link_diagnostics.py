@@ -48,7 +48,7 @@ class LinkDiagnostics(unittest.TestCase):
         m['auth']=[]
         self.assertEqual(security(m,conf('/tmp'))[0],'uncertain')
     def test_bare_lookalikes_and_ambiguous_forms_still_flag(self):
-        for link in ['www.shop.example.evil.example','shop-example.com','user@shop.example','shop.example:443','//shop.example','shop.example\\@evil.example','http://shop.example']:
+        for link in ['www.shop.example.evil.example','shop-example.com','user@shop.example','shop.example:443','//shop.example','shop.example\\@evil.example']:
             m=normalize(raw());m['links']=[link]
             self.assertEqual(security(m,conf('/tmp'))[0],'uncertain',link)
 
@@ -110,3 +110,60 @@ class LinkDiagnostics(unittest.TestCase):
         h,t,_=render(c,[],[],[item])
         self.assertIn('Date: 2026-08-24 00:00:00',h)
         self.assertIn('\nDate: 2026-08-24 00:00:00',t)
+
+    def test_same_brand_http_omitted_not_upgraded(self):
+        c=conf('/tmp')
+        for url in ['http://shop.example/sale','http://www.shop.example:80/sale']:
+            m=normalize(raw());m['links']=[url,'https://shop.example/safe']
+            status,reason,safe=security(m,c)
+            self.assertEqual(status,'verified')
+            self.assertNotIn(url,safe)
+            self.assertNotIn(url.replace('http:','https:'),safe)
+            self.assertIn('omitted 1',reason)
+        c['link_policy']={'omit_same_brand_http':False}
+        self.assertEqual(security(m,c)[0],'uncertain')
+
+    def test_service_omissions_scoped_to_authenticated_origin(self):
+        c=conf('/tmp');c['link_policy']={'omitted_service_hosts':{'shop.example':['links.mailer.example']}}
+        m=normalize(raw());m['links']=['https://links.mailer.example/secret','https://shop.example/sale']
+        status,_,safe=security(m,c)
+        self.assertEqual(status,'verified')
+        self.assertNotIn(m['links'][0],safe)
+        m['auth']=[]
+        self.assertEqual(security(m,c)[0],'uncertain')
+        m=normalize(raw());m['links']=['https://links.mailer.example/path']
+        c['link_policy']['omitted_service_hosts']={'different.example':['links.mailer.example']}
+        self.assertEqual(security(m,c)[0],'uncertain')
+
+    def test_omission_does_not_hide_deceptive_links(self):
+        c=conf('/tmp');c['link_policy']={'omitted_service_hosts':{'shop.example':['links.mailer.example']}}
+        for url in ['http://shop.example.evil.example','http://shop-example.com',
+                    'http://user@shop.example','http://shop.example:443','http://shop.example:8080',
+                    'http://shop.example\\@evil.example','http://shop.example/\nfoo',
+                    'https://links.mailer.example.evil.example/x','https://links.mailer.example:444/x',
+                    'https://user@links.mailer.example/x','https://links.mailer.example\\@evil.example',
+                    'https://unknown.example/x','javascript:alert(1)']:
+            m=normalize(raw());m['links']=[url]
+            self.assertNotEqual(security(m,c)[0],'verified',url)
+
+    def test_invalid_service_config_rejected(self):
+        import tempfile,yaml
+        from pathlib import Path
+        from pubmail.io import load_config,Error
+        with tempfile.TemporaryDirectory() as tmp:
+            c=conf(tmp)
+            for hosts in [{'shop.example':['*.mailer.example']},{'shop.example':['https://mailer.example']},
+                          {'shop.example':['mailer..example']}, {'shop.example':'mailer.example'}]:
+                c['link_policy']={'omitted_service_hosts':hosts}
+                p=Path(tmp)/'config.yaml';p.write_text(yaml.safe_dump(c))
+                with self.assertRaises(Error):load_config(p)
+
+    def test_fragment_only_omitted_not_external_relative_paths(self):
+        c=conf('/tmp');m=normalize(raw());m['links']=['#top','#footer']
+        self.assertEqual(security(m,c)[0],'verified')
+        for url in ['/login','#x\\@evil.example','//evil.example/path']:
+            m['links']=[url]
+            if url.startswith('#'):
+                self.assertNotIn(url,security(m,c)[2])
+            else:
+                self.assertEqual(security(m,c)[0],'uncertain')

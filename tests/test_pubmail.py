@@ -181,7 +181,7 @@ class Case(unittest.TestCase):
 
     def test_unsafe_schemes(self):
         for url in [
-            "http://shop.example/",
+            "http://unrelated.example/",
             "javascript:alert(1)",
             "https://127.0.0.1/",
             "https://shop.example@evil.example/",

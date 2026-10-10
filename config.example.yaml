@@ -28,6 +28,12 @@ security_exceptions:
     # omit_mailto: true
     link_domains: [shop.example, click.shop.example]
     reason: Verified this merchant's separate mailing and tracking domains
+# Omission is NOT trust: never fetch, follow or render these destinations.
+link_policy:
+  omit_same_brand_http: true
+  omitted_service_hosts:
+    shop.example: [campaign.mailer.example, links.events.example]
+    # Key is the exact authenticated ORIGINAL domain, not a relay/provider root.
 # Normal links must match the sender's registrable domain. This map also checks
 # common claimed brands in display names; add your own brand mappings locally.
 brands:

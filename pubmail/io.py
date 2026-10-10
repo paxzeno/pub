@@ -60,6 +60,18 @@ def load_config(path):
     import re
     if not isinstance(ignored, list) or any(not isinstance(h, str) or not re.fullmatch(r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}", h) for h in ignored):
         raise Error("ignored_tracking_domains must be exact lowercase hostnames (no wildcards or URLs)")
+    link_policy = c.get("link_policy", {})
+    if not isinstance(link_policy, dict) or type(link_policy.get("omit_same_brand_http", True)) is not bool:
+        raise Error("Invalid link_policy")
+    service_hosts = link_policy.get("omitted_service_hosts", {})
+    if not isinstance(service_hosts, dict):
+        raise Error("omitted_service_hosts must map authenticated original domains to exact hosts")
+    for origin, hosts in service_hosts.items():
+        if not isinstance(hosts, list) or not hosts:
+            raise Error("Service omission requires a nonempty exact-host list")
+        for h in [origin] + hosts:
+            if not isinstance(h, str) or not re.fullmatch(r"[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+", h):
+                raise Error("Service omission requires exact lowercase DNS names, no wildcards/URLs")
     vision = c.get('vision', {})
     if not isinstance(vision, dict) or type(vision.get('enabled',False)) is not bool or not isinstance(vision.get('model',{}),dict):
         raise Error('Invalid vision configuration')
