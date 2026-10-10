@@ -35,3 +35,9 @@ class ImageAssets(unittest.TestCase):
             self.assertIsNone(unsubscribe_control({'unsubscribe':[url.replace('manage.example.com','manage.example.com.evil.example')]},c))
         with patch('pubmail.core.security',return_value=('uncertain','',[])):
             self.assertIsNone(unsubscribe_control(m,c))
+
+    def test_encoded_spaces_not_encoded_traversal(self):
+        policy={'enabled':True,'hosts':{'cdn.example.com':{'path_prefixes':['/images/'],'query_keys':[]}}}
+        self.assertTrue(eligible('https://cdn.example.com/images/Product%20Hero.png',policy))
+        for path in ['%2e%2e/secret.png','%2520secret.png','%2fsecret.png','%20../secret.png','../secret.png']:
+            self.assertFalse(eligible('https://cdn.example.com/images/'+path,policy))

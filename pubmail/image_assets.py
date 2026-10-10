@@ -14,7 +14,7 @@ def eligible(url, policy, attrs=None):
     u = urlsplit(url)
     rules = policy.get('hosts', {})
     rule = rules.get(h)
-    if not rule or u.fragment or '%' in u.path or '..' in u.path:
+    if not rule or u.fragment or re.search(r'%(?!20)', u.path, re.I) or '..' in u.path:
         return False
     if not any(u.path.startswith(p) for p in rule.get('path_prefixes', [])):
         return False
