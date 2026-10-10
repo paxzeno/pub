@@ -125,9 +125,9 @@ use reviewed smaller batches/volumes before activating routine digest delivery.
 
 `newsletter.format` is `html`, `text`, or `multipart` (recommended).
 Multipart is one message with HTML and plain-text alternatives; each client picks its
-preferred version. Inline topic PNGs live in a multipart/related HTML part, with no remote
-tracking. The newsletter uses an accessible restrained green/cream palette, readable type,
-mobile-friendly single-column cards and explicit expired labels. The text version carries
+preferred version. Inline email-preview PNGs live in a multipart/related HTML part, with no remote
+tracking. The newsletter uses a charcoal/cream palette, readable type,
+alternating desktop sections that stack on mobile and explicit expired labels. The text version carries
 the same facts. Unsubscribe URLs are copied only from validated List-Unsubscribe headers;
 missing or unsafe links are omitted, never guessed. See [templates/](templates/).
 
@@ -192,3 +192,11 @@ Rewriting relay exceptions can specify `original_domain`; Gmail-validated ARC mu
 confirm that domain. The reverse-alias local-part is never treated as identity proof.
 Hourly runs use a durable timestamp checkpoint; failed classification retries do not advance
 it. A window larger than the configured limit fails visibly instead of silently starving mail.
+
+### Original-email thumbnail renderer
+
+Install Chromium after Python dependencies: `python -m playwright install chromium`
+(or `python -m playwright install --with-deps chromium` on a fresh Linux host).
+Thumbnails show a raster preview of the first original email per topic, not generated
+art. Scripts and all network/image loading are disabled, so remote product photos
+are omitted. Flagged messages remain text-only. See `templates/README.md`.

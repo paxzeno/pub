@@ -37,7 +37,10 @@ Read README.md, SECURITY.md and this file before operating this repository.
 - Preserve source-specific offers and deadlines. Do not invent dates; expired dates show
   explicit EXPIRED text and red colour in HTML.
 - Generate all HTML from our autoescaped template, never original email HTML.
-- Thumbnails are locally generated topic tiles. Never fetch original tracking images.
+- Thumbnails are raster screenshots of original email content, never generated topic art.
+  Render only normal verified items in an offline browser with scripts/network blocked;
+  strip active HTML, forms and navigation. Never fetch remote/tracking images.
+  Embed only the resulting PNG, never source HTML. Flagged items remain text-only.
 - Copy only validated original HTTPS unsubscribe URLs; never follow them automatically.
 - Mark adds/newsletter only after confirmed SMTP acceptance. Local preview is not delivery.
 - Write send intent before SMTP; uncertain delivery blocks all further sends.

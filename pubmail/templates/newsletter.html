@@ -35,12 +35,12 @@
 {% for card in cards %}
 <tr><td class="panel" style="background:#fff;padding:28px 32px;border-bottom:1px solid #d9ddd3;overflow-wrap:anywhere;word-wrap:break-word">
   {% if loop.first %}
-  <img src="{{ card.thumbnail }}" width="616" alt="" style="display:block;width:100%;height:auto;border:0;margin:0 0 24px">
-  <p style="font-size:13px;line-height:1.5;letter-spacing:2px;color:#62665d;margin:0 0 12px">THE OPENING EDIT / {{ card.sources }} MESSAGES</p>
+  <img src="{{ card.thumbnail }}" width="616" alt="Original email preview; remote images blocked" style="display:block;width:100%;height:auto;border:0;margin:0 0 24px">
+  <p style="font-size:13px;line-height:1.5;letter-spacing:2px;color:#62665d;margin:0 0 12px">EMAIL PREVIEW / {{ card.sources }} MESSAGES</p>
   <h2 class="topic-title" style="font-size:28px;line-height:1.25;margin:0 0 24px;letter-spacing:-0.6px">{{ card.title }}</h2>
   {% else %}
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" dir="{% if loop.index is even %}rtl{% else %}ltr{% endif %}" style="table-layout:fixed;margin-bottom:24px">
-  <tr><td class="art-cell" width="45%" valign="middle" dir="ltr"><img src="{{ card.thumbnail }}" width="260" alt="" style="display:block;width:100%;height:auto;border:0"></td>
+  <tr><td class="art-cell" width="45%" valign="middle" dir="ltr"><img src="{{ card.thumbnail }}" width="260" alt="Original email preview; remote images blocked" style="display:block;width:100%;height:auto;border:0"></td>
   <td class="heading-cell" width="55%" valign="middle" dir="ltr" style="padding:0 24px;text-align:left">
   <p style="font-size:13px;line-height:1.5;letter-spacing:2px;color:#62665d;margin:0 0 12px">EDIT {{ "%02d"|format(loop.index) }} / {{ card.sources }} MESSAGE{% if card.sources != 1 %}S{% endif %}</p>
   <h2 class="topic-title" style="font-size:28px;line-height:1.25;margin:0;letter-spacing:-0.6px">{{ card.title }}</h2>

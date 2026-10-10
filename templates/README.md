@@ -4,7 +4,7 @@
 `pubmail/templates/newsletter.html`; keep them identical (tested).
 
 A single column adapts from 680 px desktop to narrow mobile email. HTML uses inline CSS,
-presentation tables and locally generated PNG topic tiles for email-client compatibility.
+presentation tables and local PNG email screenshots for email-client compatibility.
 No original HTML or tracking images are inserted. Jinja autoescapes every text field.
 Plain text is rendered from the same data in pubmail/digest.py, not stripped from HTML.
 Fictional previews can be generated with `python examples/preview.py` after installation.
@@ -18,11 +18,17 @@ Composition: a full-width opening illustration, then alternating illustration/he
 rows with summaries below. Open white sections and fine rules replace repeated cards.
 The review desk remains visually distinct, text-only, and without active links.
 
-Illustrations are deterministic local PNGs: simple outdoors, reading and gaming motifs
-selected from topic-title keywords, with an abstract fallback. They are decorative,
-not depictions of actual products or evidence about an offer. No remote image fetches,
-tracking, generation API, or extra runtime dependency is involved. PNGs are embedded
-as CID attachments in email and data URLs in local browser previews.
+Thumbnails are raster screenshots of the first original email in each topic group,
+not generated artwork. Original HTML is sanitized and rendered in offline Chromium
+with JavaScript disabled, all network requests aborted, and a restrictive CSP.
+Images (including tracking pixels), frames, forms and navigation are blocked.
+Remote product photos therefore do not appear. Text-only mail gets a plain-text
+screenshot. Older cached plans without HTML also fall back to their original text.
+Only PNGs enter the newsletter, never original HTML. Flagged items are never rendered.
+Install the browser with `python -m playwright install chromium` (Linux hosts may
+need `python -m playwright install --with-deps chromium`). Renderer failure prevents
+sending rather than substituting invented artwork. Public samples use fictional
+source emails; real source HTML and screenshots must remain private.
 
 Both template copies must stay identical. Browser verification does not establish
 compatibility in every email client; test delivery separately before enabling schedules.

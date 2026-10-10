@@ -1,5 +1,6 @@
 """Generate a fictional, shareable visual sample (no mail access)."""
 
+from html import escape
 from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -42,6 +43,8 @@ for id, title, summary, deadline, sender in [
     m = {
         "id": id,
         "original_sender": sender,
+        "body": summary,
+        "original_html": '<div style="background:#e7ece1;padding:30px;font-family:Arial"><p>' + escape(sender.split("@")[1]) + "</p><h1>" + escape(title) + '</h1><p style="font-size:20px;line-height:1.6">' + escape(summary) + "</p><p>Discover the collection</p></div>",
         "timestamp": 1791532800,
         "unsubscribe": ["https://" + sender.split("@")[1] + "/unsubscribe"],
     }

@@ -122,6 +122,7 @@ def normalize(raw, body_limit=24000):
         sender_display=parseaddr(first("from"))[0],
         subject=first("subject"),
         body=text[:body_limit],
+        original_html="\n".join(markup)[:200000],
         truncated=len(text) > body_limit,
         links=list(dict.fromkeys(links)),
         unsubscribe=unsub,
