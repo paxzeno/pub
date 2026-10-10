@@ -359,3 +359,5 @@ mail clients may reuse cached inline parts when card order changes. Every HTML c
 reference must resolve to exactly one attached image in that message. Verify source
 association, not only attachment counts. A browser preview alone cannot prove a mail
 client will display the newly transmitted image.
+
+Keep inline Content-ID values short ASCII msg-ids (128-bit content-derived identifiers), so the complete header stays below the SMTP folding limit. Verify serialized RFC 5322 bytes contain a literal angle-bracket Content-ID, never RFC 2047 encoded words. Decoded attachment metadata alone can hide a broken wire header. Check both Sent and received copies when diagnosing rendering failures.

@@ -135,7 +135,9 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
         data = screenshot(original.get("original_html", ""), original.get("body", ""), image_entries)
         # Bind to this source/image and MIME message, never just its card position.
         binding = json.dumps([cid_namespace, original['id'], hashlib.sha256(data).hexdigest()])
-        cid = 'image-' + hashlib.sha256(binding.encode()).hexdigest() + '@pubmail'
+        # Keep the complete Content-ID header under SMTP's folding limit.
+        # Encoded-word folding is not valid msg-id syntax and breaks some clients.
+        cid = 'image-' + hashlib.sha256(binding.encode()).hexdigest()[:32] + '@pubmail'
         images[cid] = data
         thumbnail = (
             ("data:image/png;base64," + base64.b64encode(data).decode())

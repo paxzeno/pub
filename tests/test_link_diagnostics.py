@@ -76,3 +76,25 @@ class LinkDiagnostics(unittest.TestCase):
         m['id']='new-source';item['id']='new-source'
         changed_source=image_parts(mime(c,[item],[['new-source']],[],'second'))[0]
         self.assertNotEqual(changed['Content-ID'],changed_source['Content-ID'])
+
+    @patch('pubmail.thumbnail.screenshot',return_value=b'png')
+    def test_serialized_inline_ids_are_literal_ascii_msg_ids(self,shot):
+        import re
+        from email import policy
+        from email.parser import BytesParser
+        from pubmail.digest import mime
+        m=normalize(raw());c=conf('/tmp')
+        item={'id':m['id'],'message':m,'title':'Offer','summary':'Offer','deadline':None}
+        for fmt in ('html','multipart'):
+            c['newsletter']['format']=fmt
+            wire=mime(c,[item],[[m['id']]],[],'fictional-message').as_bytes()
+            headers=re.findall(rb'^Content-ID:([^\r\n]*(?:\r\n[ \t][^\r\n]*)*)',wire,re.M)
+            self.assertEqual(len(headers),1)
+            self.assertRegex(headers[0],rb'^ <image-[a-f0-9]{32}@pubmail>$')
+            self.assertLess(len(b'Content-ID:'+headers[0]),78)
+            parsed=BytesParser(policy=policy.default).parsebytes(wire)
+            html=parsed.get_body(preferencelist=('html',)).get_content()
+            img=next(p for p in parsed.walk() if p.get_content_type()=='image/png')
+            self.assertIn('cid:'+str(img['Content-ID']).strip('<>'),html)
+            self.assertEqual(img.get_content_disposition(),'inline')
+            self.assertEqual(img.get_payload(decode=True),b'png')
