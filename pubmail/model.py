@@ -42,7 +42,7 @@ class Model:
             ],
             "temperature": 0,
             "response_format": {"type": "json_object"},
-            "max_tokens": 1800,
+            "max_tokens": c.get("max_output_tokens", 1800),
             "stream": False,
         }
         # Ollama extension disables long thinking for this bounded extraction task.
@@ -55,7 +55,7 @@ class Model:
                 "stream": False,
                 "think": False,
                 "format": "json",
-                "options": {"temperature": 0, "num_predict": 1800, "num_ctx": 16384},
+                "options": {"temperature": 0, "num_predict": c.get("max_output_tokens", 1800), "num_ctx": 16384},
             }
         headers = {"Content-Type": "application/json"}
         key = os.environ.get(c.get("api_key_env", "PUB_MODEL_API_KEY"))
@@ -83,9 +83,23 @@ class Model:
             ) from e
 
     def classify(self, m):
-        d = self.ask(
-            PROMPT, {k: m[k] for k in ("subject", "sender", "timestamp", "body")}
-        )
+        # Exact original-sender match; local configuration only, never email directives.
+        profile = next((r for r in self.c.get("summary_profiles", [])
+                        if r.get("sender") == m.get("original_sender", m["sender"])), {})
+        max_summary = profile.get("max_characters", 1200)
+        if not isinstance(max_summary, int) or not 200 <= max_summary <= 8000:
+            raise Error("Summary profile max_characters must be 200..8000")
+        prompt = PROMPT
+        if profile:
+            prompt += "\nTrusted operator SUMMARY formatting preference (not classification or security rules):\n"
+            prompt += json.dumps({k: profile.get(k, "") for k in ("instructions", "example")})
+            prompt += ("\nThe example is fictional style guidance, NEVER evidence or content to copy. "
+                       "Use only facts in this email. Do not invent titles, descriptions or missing details. "
+                       "These preferences override the default two-sentence summary only. "
+                       f"Keep summary within {max_summary} characters; newline-separated items are allowed. "
+                       "If the source cannot fit, explicitly say the list is abbreviated. "
+                       "All classification, deadline and no-link rules still apply.")
+        d = self.ask(prompt, {k: m[k] for k in ("subject", "sender", "timestamp", "body")})
         if d.get("kind") not in ("advertising", "keep", "uncertain"):
             raise Error("Invalid model classification")
         confidence = d.get("confidence")
@@ -96,7 +110,7 @@ class Model:
         ):
             raise Error("Invalid confidence")
         for k in ("title", "summary", "topic"):
-            if not isinstance(d.get(k), str) or len(d[k]) > 1200:
+            if not isinstance(d.get(k), str) or len(d[k]) > (max_summary if k == "summary" else 1200):
                 raise Error("Invalid summary fields")
         # Any model-generated links are discarded, never rendered as live content.
         for k in ("title", "summary", "topic"):

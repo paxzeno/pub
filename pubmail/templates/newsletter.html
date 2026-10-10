@@ -49,7 +49,7 @@
   {% for item in card["items"] %}
   <div{% if not loop.first %} style="border-top:1px solid #e7e8e2;padding-top:24px;margin-top:24px"{% endif %}>
     <p style="font-size:14px;line-height:1.6;color:#62665d;margin:0 0 10px;overflow-wrap:anywhere;word-break:break-word">From {{ item.sender }}</p>
-    <p style="font-size:17px;line-height:1.7;margin:0 0 16px;overflow-wrap:anywhere">{{ item.summary }}</p>
+    <p style="font-size:17px;line-height:1.7;white-space:pre-line;margin:0 0 16px;overflow-wrap:anywhere">{{ item.summary }}</p>
     {% if item.deadline %}
     <p style="font-size:14px;line-height:1.6;font-weight:bold;margin:0 0 18px;padding:10px 12px;border-radius:0 8px 8px 0;border-left:3px solid {% if item.expired %}#a92932{% else %}#4b5a2d{% endif %};background:{% if item.expired %}#fff1f1{% else %}#f0f5e5{% endif %};color:{% if item.expired %}#a92932{% else %}#4b5a2d{% endif %}">{% if item.expired %}EXPIRED{% else %}DEADLINE{% endif %}<br>{{ item.deadline_display }}</p>
     {% endif %}

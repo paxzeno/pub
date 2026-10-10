@@ -200,3 +200,13 @@ Install Chromium after Python dependencies: `python -m playwright install chromi
 Thumbnails show a raster preview of the first original email per topic, not generated
 art. Scripts and all network/image loading are disabled, so remote product photos
 are omitted. Flagged messages remain text-only. See `templates/README.md`.
+
+### Sender-specific summaries
+
+`summary_profiles` uses exact original-sender addresses, first match wins. Set
+`instructions`, a fictional `example` of the desired output, and `max_characters`
+(200–8000). Newline-separated lists work in HTML and plain text. Profiles affect
+summary formatting only: they never whitelist, grant security trust, change
+classification safeguards or authorize invented facts. Examples are style guides,
+not source material. Increase `model.max_output_tokens` (default 1800) for long
+lists. Config changes invalidate cached decisions and existing reviewed plans.

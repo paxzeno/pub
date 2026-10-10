@@ -213,7 +213,9 @@ def security(m, c):
     safe = []
     for url in links:
         h = host(url)
-        if not h or (registered(h) != registered(od) and h not in allowed):
+        if not h:
+            return "uncertain", "Link is non-HTTPS, malformed, or uses an unsupported scheme; not a sender-authentication failure", []
+        if registered(h) != registered(od) and h not in allowed:
             return (
                 "uncertain",
                 "Link domain differs from authenticated sender; review required",

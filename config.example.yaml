@@ -52,9 +52,25 @@ newsletter:
   recipient: reader@example.com
   himalaya_account: newsletter
   sent_mailbox: Sent Messages
-  # Thumbnails are local, generated topic tiles: no tracking image downloads.
+  # Thumbnails render original email content offline; remote images remain blocked.
 rollout:
   hourly_enabled: false
   digest_enabled: false
   # Set only after historical cleanup; epoch seconds prevents historical drift.
   live_after: null
+
+# First exact original-sender match wins. Formatting only; never grants trust.
+summary_profiles:
+  - sender: releases@streaming.example
+    instructions: >-
+      List every new film or series mentioned, one per line, with a tiny factual
+      description if the email supplies one. Include release dates only if given.
+      If descriptions are absent, say so; do not use outside knowledge.
+    example: |-
+      • The Glass Harbour — Coastal mystery series. Available 12 October.
+      • Orbit Nine — New title mentioned; no description supplied.
+    max_characters: 6000
+  - sender: offers@travel.example
+    instructions: Summarise destinations, data allowance, price and offer deadline when stated.
+    example: Europe — 5 GB for 30 days at the stated sale price; no expiry stated.
+    max_characters: 1200

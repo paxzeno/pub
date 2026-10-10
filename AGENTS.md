@@ -56,3 +56,9 @@ Read README.md, SECURITY.md and this file before operating this repository.
 - Model endpoint defaults local; remote processing requires explicit informed opt-in.
 - Keep rules and tests aligned. Test archive safeguards, MIME safety, deduplication and failure paths.
 - systemd timers run code directly; do not replace these with an agent-waking automation.
+
+## Summary profiles
+- Honour exact-sender local summary_profiles for content selection and formatting.
+- Examples are fictional style guidance, never facts to insert into a real summary.
+- List requested titles/details only when present in the source; disclose omissions
+  or missing descriptions. Profiles do not relax classification or security rules.
