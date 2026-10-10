@@ -143,3 +143,11 @@ agent_chain:
     reviewer_must_not: [send_mail, archive_directly, grant_blanket_trust]
     rule_changes_require_owner: true
     apply_through_normal_safety_checks: true
+
+# Discard these known marketing-service destinations, not a trust allowlist.
+# Exact HTTPS host match only; do not generalise to all redirects or brand links.
+# Omitted from security link checks AND from renderable/unsubscribe links.
+ignored_tracking_domains:
+  - ctrk.klclick.com
+  - ctrk.klclick1.com
+  - manage.kmail-lists.com

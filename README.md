@@ -301,3 +301,11 @@ source Message-ID is available; legacy records fall back to thread IDs, not mess
 IDs. Review diagnostics name sender/relay domains and every differing HTTPS host,
 never recipient-specific URL paths/tokens. Known forwarding is not itself a link
 mismatch. Domain details in review sections remain defanged and non-clickable.
+
+### Ignored marketing-service links
+`ignored_tracking_domains` lists exact HTTPS hosts to discard from link checks and
+returned safe/unsubscribe URLs. It is NOT a trust allowlist: never render those
+destinations as clickable newsletter links or fetch their redirect targets. Keep
+useful anchor text; the offline thumbnail already strips navigation and blocks
+network requests. Sender/relay authentication and every other link remain checked.
+No wildcard matching, automatic trust inference or automatic unsubscribe.

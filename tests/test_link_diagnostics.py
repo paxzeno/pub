@@ -20,3 +20,16 @@ class LinkDiagnostics(unittest.TestCase):
         self.assertIn('#search/rfc822msgid%3Amessage%2B1%40example.com',html)
         self.assertIn('<strong>&#8226;&nbsp;Title</strong>',html)
         self.assertNotIn('#all/a1',html)
+    def test_tracking_excluded_not_allowed(self):
+        m=normalize(raw(body='https://ctrk.klclick.com/path?recipient=secret'))
+        c=conf('/tmp');c['ignored_tracking_domains']=['ctrk.klclick.com']
+        sec,reason,urls=security(m,c)
+        self.assertEqual(sec,'verified')
+        self.assertFalse(any('klclick' in u for u in urls))
+        m['links'].append('https://ctrk.klclick.com.evil.example/path')
+        self.assertEqual(security(m,c)[0],'uncertain')
+    def test_ignored_host_does_not_skip_sender_auth(self):
+        m=normalize(raw(body='https://ctrk.klclick.com/path'))
+        m['auth']=[]
+        c=conf('/tmp');c['ignored_tracking_domains']=['ctrk.klclick.com']
+        self.assertEqual(security(m,c)[0],'uncertain')

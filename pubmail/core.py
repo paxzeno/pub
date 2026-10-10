@@ -148,6 +148,9 @@ def normalize(raw, body_limit=24000):
 
 
 def security(m, c):
+    # Discard configured HTTPS tracking destinations, never treat them as safe links.
+    ignored = set(c.get("ignored_tracking_domains", []))
+    links = [u for u in m.get("links", []) + m.get("unsubscribe", []) if host(u) not in ignored]
     sender = m["sender"]
     sd = domain(sender)
     original = m["original_sender"]
@@ -189,7 +192,7 @@ def security(m, c):
     if relay and not ex:
         return (
             "uncertain",
-            f"Forwarding route {relay} authenticated; original sender {original} needs attribution. Link hosts: {', '.join(sorted({host(u) for u in m.get("links", []) if host(u) and not discard(u, original)})) or 'none'}. Forwarding itself is not a link mismatch.",
+            f"Forwarding route {relay} authenticated; original sender {original} needs attribution. Link hosts: {', '.join(sorted({host(u) for u in links if host(u) and not discard(u, original)})) or 'none'}. Forwarding itself is not a link mismatch.",
             [],
         )
     if relay:
@@ -224,7 +227,6 @@ def security(m, c):
         ):
             return "suspicious", "Display-name brand and sender domain disagree", []
     allowed = set(ex.get("link_domains", []) if ex else [])
-    links = m.get("links", []) + m.get("unsubscribe", [])
     safe = []
     for url in links:
         if discard(url, original):

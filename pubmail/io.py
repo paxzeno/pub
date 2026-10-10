@@ -47,6 +47,10 @@ def load_config(path):
     ):
         if key not in c:
             raise Error(f"Missing config key: {key}")
+    ignored = c.get("ignored_tracking_domains", [])
+    import re
+    if not isinstance(ignored, list) or any(not isinstance(h, str) or not re.fullmatch(r"[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}", h) for h in ignored):
+        raise Error("ignored_tracking_domains must be exact lowercase hostnames (no wildcards or URLs)")
     from .reviewer import validate_config
     validate_config(c)
     if c["newsletter"]["format"] not in ("html", "text", "multipart"):
