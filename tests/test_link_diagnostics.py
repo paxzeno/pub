@@ -33,3 +33,10 @@ class LinkDiagnostics(unittest.TestCase):
         m['auth']=[]
         c=conf('/tmp');c['ignored_tracking_domains']=['ctrk.klclick.com']
         self.assertEqual(security(m,c)[0],'uncertain')
+    def test_documented_tracking_suffix_boundary(self):
+        c=conf('/tmp');c['ignored_tracking_domain_suffixes']=['ct.sendgrid.net','awstrack.me']
+        for url in ('https://u123.ct.sendgrid.net/ls/click?secret=1','https://r.us-east-1.awstrack.me/x'):
+            m=normalize(raw(body=url));sec,_,safe=security(m,c)
+            self.assertEqual(sec,'verified');self.assertNotIn(url,safe)
+        for url in ('https://ct.sendgrid.net.evil.example/x','https://evilct.sendgrid.net/x','https://ct.sendgrid.net/x','https://user@u123.ct.sendgrid.net/x','https://u123.ct.sendgrid.net:444/x'):
+            self.assertEqual(security(normalize(raw(body=url)),c)[0],'uncertain')

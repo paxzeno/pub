@@ -309,3 +309,9 @@ destinations as clickable newsletter links or fetch their redirect targets. Keep
 useful anchor text; the offline thumbnail already strips navigation and blocks
 network requests. Sender/relay authentication and every other link remain checked.
 No wildcard matching, automatic trust inference or automatic unsubscribe.
+
+Research-backed common tracker exclusions and sources are in
+[docs/tracking-domains.md](docs/tracking-domains.md). Use exact hosts normally;
+`ignored_tracking_domain_suffixes` supports strict subdomains of documented
+tracking-only infrastructure. This explicit suffix field does not accept substring
+or wildcard patterns, and must never contain general hosting/provider roots.

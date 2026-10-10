@@ -151,3 +151,11 @@ ignored_tracking_domains:
   - ctrk.klclick.com
   - ctrk.klclick1.com
   - manage.kmail-lists.com
+  - r20.rs6.net  # Constant Contact documented click redirect host
+
+# Documented dedicated tracking infrastructure, SUBDOMAINS ONLY (DNS boundary).
+# Not a sender allowlist. Never use general hosting/brand roots here.
+# Research and exclusions: docs/tracking-domains.md
+ignored_tracking_domain_suffixes:
+  - ct.sendgrid.net
+  - awstrack.me

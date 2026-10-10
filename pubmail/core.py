@@ -150,7 +150,11 @@ def normalize(raw, body_limit=24000):
 def security(m, c):
     # Discard configured HTTPS tracking destinations, never treat them as safe links.
     ignored = set(c.get("ignored_tracking_domains", []))
-    links = [u for u in m.get("links", []) + m.get("unsubscribe", []) if host(u) not in ignored]
+    suffixes = c.get("ignored_tracking_domain_suffixes", [])
+    def discarded_tracker(url):
+        h = host(url)  # Only well-formed HTTPS, no credentials or unusual ports.
+        return bool(h) and (h in ignored or any(h.endswith("." + suffix) for suffix in suffixes))
+    links = [u for u in m.get("links", []) + m.get("unsubscribe", []) if not discarded_tracker(u)]
     sender = m["sender"]
     sd = domain(sender)
     original = m["original_sender"]
