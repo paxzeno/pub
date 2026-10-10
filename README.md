@@ -210,3 +210,12 @@ summary formatting only: they never whitelist, grant security trust, change
 classification safeguards or authorize invented facts. Examples are style guides,
 not source material. Increase `model.max_output_tokens` (default 1800) for long
 lists. Config changes invalidate cached decisions and existing reviewed plans.
+
+## Social footer removal
+Known social-platform links and their HTML anchor contents are removed from the
+processing copy (summary input and thumbnail), and excluded from link-domain checks.
+Keep links to a platform when the original sender belongs to that same platform;
+normal sender authentication and link checks still apply. Match exact domain
+boundaries, never brand words or lookalikes. Unknown and malformed links remain
+subject to security checks. No original Gmail message is edited. Profiles/relays
+do not confer trust. All external images remain blocked.

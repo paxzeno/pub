@@ -58,7 +58,7 @@ def load_config(path):
 
 
 def policy_hash(c):
-    return hashlib.sha256(json.dumps(c, sort_keys=True).encode()).hexdigest()
+    return hashlib.sha256(json.dumps({"policy_version": 2, "config": c}, sort_keys=True).encode()).hexdigest()
 
 
 class Store:

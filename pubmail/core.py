@@ -6,6 +6,7 @@ from html.parser import HTMLParser
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 from publicsuffix2 import get_sld
+from .social import discard, trim_html, trim_text
 
 PROTECTED = re.compile(
     r"\b(invoice|receipt|password|verification|security alert|sign.in|one.time|payment (?:due|failed|received)|order (?:confirmation|confirmed|shipped)|booking|reservation|boarding|refund|appointment|fatura|factura|recibo|palavra.passe|c[oó]digo de|pagamento|encomenda|reserva|consulta|reembolso)\b",
@@ -101,6 +102,10 @@ def normalize(raw, body_limit=24000):
             walk(part)
 
     walk(raw.get("payload", {}))
+    sender = parseaddr(first("from"))[1].lower()
+    original = parseaddr(first("x-original-from"))[1].lower() or sender
+    markup = [trim_html(s, original) for s in markup]
+    texts = [trim_text(s, original) for s in texts]
     parser = BodyParser()
     for s in markup:
         parser.feed(s)
@@ -212,6 +217,8 @@ def security(m, c):
     links = m.get("links", []) + m.get("unsubscribe", [])
     safe = []
     for url in links:
+        if discard(url, original):
+            continue
         h = host(url)
         if not h:
             return "uncertain", "Link is non-HTTPS, malformed, or uses an unsupported scheme; not a sender-authentication failure", []

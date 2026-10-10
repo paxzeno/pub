@@ -62,3 +62,12 @@ Read README.md, SECURITY.md and this file before operating this repository.
 - Examples are fictional style guidance, never facts to insert into a real summary.
 - List requested titles/details only when present in the source; disclose omissions
   or missing descriptions. Profiles do not relax classification or security rules.
+
+## Social footer removal
+Known social-platform links and their HTML anchor contents are removed from the
+processing copy (summary input and thumbnail), and excluded from link-domain checks.
+Keep links to a platform when the original sender belongs to that same platform;
+normal sender authentication and link checks still apply. Match exact domain
+boundaries, never brand words or lookalikes. Unknown and malformed links remain
+subject to security checks. No original Gmail message is edited. Profiles/relays
+do not confer trust. All external images remain blocked.
