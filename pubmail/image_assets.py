@@ -14,7 +14,7 @@ def eligible(url, policy, attrs=None):
     u = urlsplit(url)
     rules = policy.get('hosts', {})
     rule = rules.get(h)
-    if not rule or u.fragment or re.search(r'%(?!20)', u.path, re.I) or '..' in u.path:
+    if not rule or u.fragment or re.search(r'%(?!(?:20|28|29|7b|7d))', u.path, re.I) or '..' in u.path:
         return False
     if not any(u.path.startswith(p) for p in rule.get('path_prefixes', [])):
         return False
@@ -43,7 +43,7 @@ def fetch(url, max_bytes=3_000_000):
     try:
         conn.request('GET', u.path + ('?' + u.query if u.query else ''), headers={'Accept':'image/png,image/jpeg,image/webp,image/gif'})
         response = conn.getresponse()
-        if response.status != 200 or response.getheader('Content-Type','').split(';')[0] not in ('image/png','image/jpeg','image/webp','image/gif'):
+        if response.status != 200 or response.getheader('Content-Type','').split(';')[0] not in ('image/png','image/jpeg','image/webp','image/gif','image/avif'):
             raise ValueError('Not a supported image; redirects are not followed')
         data = response.read(max_bytes + 1)
         if len(data) > max_bytes:

@@ -401,3 +401,5 @@ apply. Unknown unrelated domains remain unresolved pending senior investigation;
 do not label a mere host mismatch as detected phishing. Research service hosts before
 adding omissions; never follow recipient-specific tracking or unsubscribe URLs.
 A passing link check only permits normal presentation, not automatic mailbox approval.
+
+Approved static artwork filenames may use encoded spaces, braces and parentheses (`%20`, `%7B`, `%7D`, `%28`, `%29`). Encoded separators, traversal and double encoding remain blocked. AVIF artwork is accepted only when the installed Pillow decoder can decode it, then re-encoded as PNG.
