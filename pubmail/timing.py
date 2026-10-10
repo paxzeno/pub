@@ -67,4 +67,28 @@ def extract_event_timing(body, subject=''):
             continue
         if first <= last:
             candidates.append({'start':first.isoformat(), 'end':last.isoformat(), 'evidence':evidence})
-    return candidates[0] if len(candidates) == 1 else None
+    single = MONTH + r'\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(20\d{2})\b'
+    for hit in re.finditer(single, source, re.I):
+        context = source[max(0, hit.start()-160):hit.start()]
+        if not re.search(r'\b(?:webinar|live session|event|conference|festival)\b', context, re.I):
+            continue
+        month, day, year = hit.groups()
+        try:
+            value = date(int(year), MONTHS[month.lower()], int(day)).isoformat()
+        except ValueError:
+            continue
+        candidates.append({'start':value,'end':value,'evidence':context+hit[0]})
+    unique = {(d['start'],d['end']):d for d in candidates}
+    return next(iter(unique.values())) if len(unique) == 1 else None
+
+
+def unresolved_timing_notice(body, subject=''):
+    """Keep literal dates/urgency visible without inventing a year or cutoff."""
+    source = re.sub(r'\s+', ' ', subject + ' ' + body)
+    date_hit = re.search(r'\b' + MONTH + r'\s+\d{1,2}(?:st|nd|rd|th)?\b(?:\s*[•,–-]?\s*\d{1,2}(?::\d{2})?\s*(?:AM|PM)\s*(?:PT|ET|UTC|GMT)(?:\s*/\s*\d{1,2}(?::\d{2})?\s*(?:AM|PM)\s*(?:PT|ET|UTC|GMT))?)?', source, re.I)
+    if date_hit and re.search(r'\b(?:webinar|live session|event|join us|register)\b', source, re.I):
+        return 'Source event timing: “' + date_hit[0] + '”; full date/year not verified.'
+    urgency = re.search(r"won[’']t last(?: forever| long)?|ending soon|ends soon|limited[ -]time", source, re.I)
+    if urgency:
+        return 'Source urgency: “' + urgency[0] + '”; exact cutoff not supplied.'
+    return ''

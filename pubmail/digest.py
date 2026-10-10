@@ -78,6 +78,9 @@ def render(c, items, groups, flagged, now=None, inline=False):
                 if match:
                     received = datetime.fromtimestamp(m['timestamp'], ZoneInfo(c['timezone'])).strftime('%d %b %Y')
                     relative_notice = '“'+match[0]+'” — source email '+received+'; exact cutoff not supplied.'
+            if not deadline and not event and not relative_notice:
+                from .timing import unresolved_timing_notice
+                relative_notice = unresolved_timing_notice(m.get('body',''), m.get('subject',''))
             unsub = next(
                 (u for u in m.get("unsubscribe", []) if u in i.get("safe_urls", [])),
                 None,

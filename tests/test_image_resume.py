@@ -41,3 +41,19 @@ class Resume(unittest.TestCase):
         with patch('pubmail.vision.enrich',side_effect=ProcessingPending('saved')):
             with self.assertRaises(ProcessingPending):model.classify({})
         model.reviewer.exchange.assert_not_called()
+
+    def test_incomplete_timing_is_not_silently_lost(self):
+        from pubmail.timing import unresolved_timing_notice
+        notice=unresolved_timing_notice('LIVE SESSION AUGUST 26 • 9AM PT / 12PM ET')
+        self.assertIn('AUGUST 26',notice)
+        self.assertIn('9AM PT / 12PM ET',notice)
+        self.assertIn('not verified',notice)
+        self.assertNotIn('2026',notice)
+        self.assertIn('exact cutoff not supplied',unresolved_timing_notice('Your summer savings won’t last long'))
+
+    def test_single_webinar_date_has_explicit_year(self):
+        from pubmail.timing import extract_event_timing
+        event=extract_event_timing('Webinar Date & Time Wednesday, August 26, 2026 9am PT / 12pm ET')
+        self.assertEqual(event['start'],'2026-08-26')
+        self.assertEqual(event['end'],'2026-08-26')
+        self.assertIsNone(extract_event_timing('Webinar August 26. Copyright 2026'))

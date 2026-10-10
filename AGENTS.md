@@ -329,3 +329,6 @@ The CLI exits **75** for pending image work (resume the same command), and **1**
 for an actual failure. Do not treat every nonzero exit as permission to retry.
 Plan previews now regenerate normal-item summaries with visual evidence; their
 private JSON retains source evidence for inspection, but creates no delivery or labels.
+
+Single-day events with an explicit source year also receive event badges. Keep
+raw ambiguous event dates and urgency visible without guessing a cutoff/year.
