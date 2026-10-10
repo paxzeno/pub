@@ -81,8 +81,7 @@ summary_profiles:
     max_characters: 1200
 
 # Routing contract: rules -> local model -> senior agent -> human owner.
-# Planned integration, NOT an active dispatcher. The CLI rejects enabled: true
-# until the queue/agent adapter is implemented; no silent pretend-escalation.
+# Disabled by default. Configure a JSON command adapter, then opt in to enable.
 agent_chain:
   enabled: false
   stages:
@@ -100,17 +99,16 @@ agent_chain:
       contact_ref: newsletter.recipient  # No personal address in this sample
   connections:
     senior_openclaw:
-      transport: openclaw_cli
-      executable: openclaw  # Absolute executable path recommended for timers
-      # CLI reads gateway address/auth from this existing OpenClaw config.
-      # Illustrative paths: replace with your installation's actual locations.
-      config_path: ~/.openclaw/openclaw.json
-      state_dir: ~/.openclaw
-      auth: inherited_openclaw_config  # Never put a gateway token in this YAML
-      session_key: agent:main:pub-review
+      # Provider-neutral protocol: one JSON request on stdin, response on stdout.
+      transport: command_json
+      # Optional bundled adapter. Replace argv with ANY compatible agent wrapper.
+      argv: [python3, -m, pubmail.openclaw_adapter, --agent, main]
+      env:
+        OPENCLAW_CONFIG_PATH: ~/.openclaw/openclaw.json
+        OPENCLAW_STATE_DIR: ~/.openclaw
+      processing: remote  # Declare actual backend, even if command runs locally
       timeout_seconds: 180
-      response_format: json
-      deliver: false  # Return to the script, not a chat channel
+      # Credentials stay with the adapter/provider, never inside this sample.
   routing:
     rules_next: local
     local_uncertain: senior

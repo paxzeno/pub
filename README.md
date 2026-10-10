@@ -239,51 +239,43 @@ explicit year may combine with a matching end-date/time clause in the same sourc
 Retain both evidence excerpts, never infer a missing year or timezone. Date-only
 cutoffs display without an invented time. Expired offers remain explicitly red.
 
-### Agent chain configuration (integration pending)
+### Bring your own senior reviewer
 
-`agent_chain` in the sample describes rules → local model → senior reviewer →
-human owner, with escalation reasons, batched notifications, deduplication, retry
-and hop limits, an evidence packet, and reviewer permissions. `model_ref: model`
-uses the existing model section; `agent_id` names an agent, not an inference model.
-The example routes unresolved cases to an OpenClaw `main` agent, then the owner
-only when judgement is required. Match identifiers to your own deployment.
+`agent_chain` routes rules → local model → senior reviewer → owner. It is optional
+and disabled in the public sample. The implementation uses a provider-neutral
+`command_json` adapter: configured argv receives one JSON request on stdin and
+returns one JSON response on stdout. OpenClaw is an optional bundled adapter,
+not a dependency of the core handoff. See **AGENTS.md → BYO reviewer setup** for
+connection, credentials, protocol and operational instructions.
 
-**This is a configuration contract, not an implemented queue/dispatcher.** Keep
-`enabled: false`; the CLI explicitly rejects true instead of silently ignoring it.
-The batching/routing fields are reserved for that integration and currently do not
-trigger calls, notifications, or retries. Existing mailbox safeguards remain active.
-A cloud-backed senior reviewer needs separate remote-processing consent; a local
-first stage does not make a remote escalation private. Tokens and live destinations
-belong only in local configuration/credential storage.
+Uncertain triage decisions are batched at the end of a scan. Model/extraction failures
+and invalid digest grouping also request review (single-task batches). Responses
+pass the same classification, title coverage, deadline and grouping validators as
+local output. A senior cannot bypass protected content, sender authentication,
+link checks or the existing archive-plan checkpoint. It cannot update trust rules.
 
+Persistent SQLite review state deduplicates identical task+policy payloads. Batch
+size, minimum interval and rolling-24-hour budget are enforced. No work means no
+invocation. Quota-limited pending cases resume when that input is processed again;
+there is no independent background dispatcher. Failed, ambiguous, deferred and
+owner-needed cases do not automatically retry. Review their status using:
 
-#### How the script reaches the senior reviewer
-
-The senior stage's `connection_ref` selects `agent_chain.connections.senior_openclaw`.
-This declares the executable, OpenClaw configuration/state paths, dedicated review
-session, timeout and JSON return format. These are deployment settings, never values
-chosen by email content or model output. The public paths are illustrative; use the
-actual paths of your installed OpenClaw instance in your private YAML.
-
-The adapter must expand `~`, set `OPENCLAW_CONFIG_PATH` from `config_path` and
-`OPENCLAW_STATE_DIR` from `state_dir`, and execute this argument vector without a shell:
-
-```text
-<executable> agent --agent <stage.agent_id> --session-key <connection.session_key>
-  --message-file <private-review-packet-file> --timeout <timeout_seconds> --json
+```sh
+pubmail --config ~/.config/pub/config.yaml review-status
+pubmail --config ~/.config/pub/config.yaml review-test
 ```
 
-`openclaw agent` uses the Gateway by default (do not add `--local`). The CLI resolves
-the gateway address and credentials using its own configuration; the newsletter
-needs no duplicate gateway token. Required secret-provider environment must be
-available to the service running the CLI. Keep packet files owner-only and remove
-them after processing. `deliver: false` means omit `--deliver`: responses return to
-the caller, not Discord or email. JSON is the CLI result envelope, not proof that
-the review decision inside it conforms to our schema; the adapter must validate it.
-A transport timeout or malformed response must defer the item, not approve it.
+`review-test` forces a local-model failure on a fictional receipt, exercises the
+real adapter in an isolated temporary state directory, validates the response,
+and makes no mailbox calls. It consumes one real reviewer invocation.
 
-This connection is **configured, not yet dispatched**: the existing disabled guard
-still applies until queueing, invocation and decision validation are implemented.
-A local CLI may invoke a cloud-backed agent; `allow_remote_processing: false` must
-still block that path until explicitly permitted. Reviewer permissions in this
-YAML are a contract, not a tool sandbox; an adapter must enforce its trust boundary.
+The owner queue is local, visible in status and the private SQLite `senior_items`
+table; it does not send unsolicited owner notifications. Inputs exceeding the
+configured excerpt bound remain unresolved instead of sending partial evidence.
+A local command can still use a cloud model: declare `processing: remote` and
+explicitly opt in with `review_packet.allow_remote_processing: true`.
+
+The routing diagram/permission fields document the fixed chain in this version;
+it is not an arbitrary multi-hop workflow engine. One senior attempt per task
+and two hops are supported. Enabled adapters do not enable either mail schedule.
+Credentials, source mail, responses and private destinations must remain local.

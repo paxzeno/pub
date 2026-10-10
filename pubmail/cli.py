@@ -3,7 +3,7 @@ import argparse, json, os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from .io import Error, Gmail, Store, load_config
-from .model import Model
+from .reviewer import EscalatingModel
 from . import workflow, digest
 
 
@@ -15,6 +15,8 @@ def main():
     parser.add_argument("--config", default="~/.config/pub/config.yaml")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("check")
+    sub.add_parser("review-status")
+    sub.add_parser("review-test")
     sub.add_parser("init-labels")
     sub.add_parser("oldest-week")
     sub.add_parser("hourly")
@@ -38,15 +40,21 @@ def main():
     store = None
     try:
         c = load_config(args.config)
+        if args.command == "review-test":
+            from .reviewer import smoke_test
+            print(json.dumps(smoke_test(c)))
+            return
         store = Store(c)
         gmail = Gmail(c)
-        model = Model(c)
+        model = EscalatingModel(c, store)
         if args.command in ("hourly", "weekly"):
             key = "hourly_enabled" if args.command == "hourly" else "digest_enabled"
             if not c["rollout"].get(key):
                 print(json.dumps({"status": "paused", "job": args.command}))
                 return
-        if args.command == "check":
+        if args.command == "review-status":
+            out = model.reviewer.status()
+        elif args.command == "check":
             d = gmail.call("auth", "list")
             matches = [
                 a

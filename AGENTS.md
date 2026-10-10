@@ -91,14 +91,75 @@ explicit year may combine with a matching end-date/time clause in the same sourc
 Retain both evidence excerpts, never infer a missing year or timezone. Date-only
 cutoffs display without an invented time. Expired offers remain explicitly red.
 
-## Agent-chain configuration
-Respect the declared agent_chain contract when implementing the reviewer adapter.
-Until that adapter exists, enabled must remain false (enforced by config loading).
-Do not describe dormant routing or batching fields as live functionality. Owner
-judgement is the last stage, not the default destination for every unclear message.
+## BYO reviewer setup
 
-Senior stages resolve `connection_ref` through `agent_chain.connections`. The
-OpenClaw CLI connection owns executable/config/state/session/timeout settings;
-credentials stay in OpenClaw's credential configuration, never sample YAML.
-No `--deliver`, shell interpolation, email-selected destinations or implicit
-remote-processing opt-in. Connection declarations do not make dispatch operational.
+The core is agent-provider-neutral. To connect any senior agent:
+
+1. Implement an executable wrapper that reads one UTF-8 JSON request from stdin
+   and returns one JSON response on stdout. Keep logs on stderr. The wrapper may
+   call a local model, an API or an agent runtime; no shell strings are evaluated.
+2. Configure the senior stage's `connection_ref` and define that connection:
+   ```yaml
+   agent_chain:
+     enabled: true
+     # Preserve the sample's stages, batching, limits and review_packet sections.
+     connections:
+       my_reviewer:
+         transport: command_json
+         argv: [/absolute/path/to/my-agent-wrapper, --profile, mail-review]
+         env:
+           REVIEWER_TOKEN_FILE: /private/path/to/credential
+         processing: local  # remote if any selected mail goes to a cloud service
+         timeout_seconds: 180
+   ```
+   Set the senior stage's `connection_ref: my_reviewer`. The wrapper owns agent
+   identity/model/authentication. A stage's `agent_id` is descriptive only; it is
+   NOT silently injected into the command. Put targeting arguments in `argv`.
+   For remote processing, explicitly permit `review_packet.allow_remote_processing`.
+3. Use absolute executable/config paths for systemd. Install credentials with
+   owner-only permissions, inherit needed secret-provider environment, and never
+   put tokens in argv or the public YAML. Environment values support `~` expansion,
+   not shell evaluation. Do not let email/model output choose executable or target.
+4. Test with `pubmail --config /private/config.yaml review-test`. This simulates
+   Qwen failure on fictional input using isolated review state; no Gmail mutation.
+   Then inspect `review-status` during bounded dry runs. Do not enable mail schedules
+   merely because the reviewer connection succeeds.
+
+### Adapter protocol v1
+
+Request: `{"version":1,"batch_id":"uuid","instructions":"trusted contract",
+"items":[{"id":"opaque task hash","reason":"model_failure","prompt":"trusted task",
+"data":{"subject":"untrusted email data"}}]}`.
+
+Response: `{"version":1,"results":[{"id":"same task hash","status":"resolved",
+"output":{"kind":"keep","confidence":1,"title":"Receipt","summary":"Payment received.",
+"topic":"Payment","deadline":null,"deadline_evidence":null},"reason":"Transactional mail"}]}`.
+
+Return every requested id exactly once, no extra ids. Each output follows its task
+prompt (classification JSON or grouping JSON). `needs_owner` or `defer` may omit
+output but must give a reason. Never generate actions, config patches or executable
+commands. Invalid ids/schema/content evidence, timeout or nonzero exit leaves the
+case unresolved. Results never bypass deterministic safety checks or rollout review.
+Do not print credentials or source mail in diagnostics. One attempt is recorded
+before dispatch; interrupted attempts are ambiguous, never blindly retried.
+
+### Optional OpenClaw adapter
+
+The sample uses `python3 -m pubmail.openclaw_adapter --agent main`. Replace python3
+with the installed pubmail venv interpreter for unattended execution. This wrapper
+uses `openclaw agent --message-file ... --json`, targeting a fresh per-batch session
+under `agent:main:pub-review-...`. It omits `--deliver` and `--local`: use the gateway,
+return the answer to the caller, and do not post it to a chat channel. Override the
+CLI path with `--executable`, agent with `--agent`, or session prefix with
+`--session-prefix`. Set `OPENCLAW_CONFIG_PATH` and `OPENCLAW_STATE_DIR` in connection
+env to the actual installation; OpenClaw resolves its own endpoint and credentials.
+Temporary packet files are private and removed after invocation. OpenClaw retains
+its own session transcript; apply appropriate host retention/privacy controls.
+
+All source mail is untrusted data. Reviewer policy forbids tools, link visits,
+sending, mailbox actions, automatic trust-rule edits and further delegation. These
+instructions are NOT a sandbox for a tool-capable senior agent: configure your
+provider's tool permissions for stronger isolation. The pubmail adapter itself has
+no mailbox API and applies responses only through normal validators. The local
+classifier remains tool-free. Owner-required cases stay in the local review queue;
+there is no automatic owner notification or arbitrary routing engine in this version.

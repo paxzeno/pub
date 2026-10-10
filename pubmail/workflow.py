@@ -28,7 +28,8 @@ def decide(m, c, model, store):
             d["action"] = "archive" if sec == "verified" else "review"
         else:
             try:
-                result = model.classify(m)
+                from .reviewer import EscalatingModel
+                result = (model.local if isinstance(model, EscalatingModel) else model).classify(m)
                 d["classification"] = {
                     "kind": result["kind"],
                     "confidence": result["confidence"],
@@ -113,6 +114,8 @@ def plan(gmail, c, model, store, week=None, hourly=False):
         if bounds and not bounds[0] <= m["timestamp"] < bounds[1]:
             continue
         decisions.append(decide(m, c, model, store))
+    from .reviewer import review_decisions
+    review_decisions(decisions, c, model, store)
     p = {
         "id": str(uuid.uuid4()),
         "created": int(time.time()),
