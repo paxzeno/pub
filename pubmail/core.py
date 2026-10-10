@@ -109,7 +109,11 @@ def normalize(raw, body_limit=24000):
 
     walk(raw.get("payload", {}))
     sender = parseaddr(first("from"))[1].lower()
-    original = parseaddr(first("x-original-from"))[1].lower() or sender
+    # Forwarder headers are identity hints, never proof by themselves.
+    original_values = headers.get("x-original-from", []) + headers.get("x-simplelogin-original-from", [])
+    original_hints = [parseaddr(v)[1].lower() for v in original_values]
+    original_conflict = len(original_hints) != len(set(original_hints)) or len(set(original_hints)) > 1 or any(not domain(v) for v in original_hints)
+    original = original_hints[0] if original_hints and not original_conflict else sender
     markup = [trim_html(s, original) for s in markup]
     texts = [trim_text(s, original) for s in texts]
     parser = BodyParser()
@@ -119,10 +123,6 @@ def normalize(raw, body_limit=24000):
     links = parser.links if markup else re.findall(r'https?://[^\s<>"\)]+', text)
     unsub = re.findall(r"<(https://[^>]+)>", first("list-unsubscribe"))
     sender = parseaddr(first("from"))[1].lower()
-    original = sender
-    # Only a hint. Security() must authenticate the forwarding route separately.
-    if first("x-original-from"):
-        original = parseaddr(first("x-original-from"))[1].lower() or sender
     return dict(
         id=raw["id"],
         thread_id=raw.get("threadId", ""),
@@ -131,6 +131,7 @@ def normalize(raw, body_limit=24000):
         timestamp=int(raw.get("internalDate", "0")) // 1000,
         sender=sender,
         original_sender=original,
+        original_header_conflict=original_conflict,
         sender_display=parseaddr(first("from"))[0],
         subject=first("subject"),
         body=text[:body_limit],
@@ -193,7 +194,16 @@ def security(m, c):
         ),
         None,
     )
-    if relay and not ex:
+    # Use only Gmail's validated ARC summary, never sender-supplied ARC headers.
+    arc = next((part for part in auth.split(";")[1:]
+                if re.match(r"^\s*arc=pass\s+\(", part)), "")
+    origins = re.findall(r"\bfromdomain=([^\s;)]+)", arc)
+    arc_original = (original != sender and len(origins) == 1
+                    and origins[0].strip('"').lower() == od
+                    and bool(re.search(r"\bdmarc=pass\b", arc)))
+    if m.get('original_header_conflict'):
+        return "uncertain", "Conflicting or malformed original-sender headers", []
+    if relay and not ex and not arc_original:
         return (
             "uncertain",
             f"Forwarding route {relay} authenticated; original sender {original} needs attribution. Link hosts: {', '.join(sorted({host(u) for u in links if host(u) and not discard(u, original)})) or 'none'}. Forwarding itself is not a link mismatch.",
@@ -205,11 +215,7 @@ def security(m, c):
             return "uncertain", "Original domain missing from relay exception", []
         # Gmail-validated ARC can preserve original domain authentication across
         # a rewriting relay. Alias local-parts are never decoded as identity proof.
-        arc = next(
-            (part for part in auth.split(";") if re.search(r"\barc=pass\b", part)), ""
-        )
-        origins = re.findall(r"fromdomain=([^\s;)]+)", arc)
-        if not ex.get("operator_verified_original", False) and (
+        if not (ex or {}).get("operator_verified_original", False) and (
             not expected
             or not re.search(r"\bdmarc=pass\b", arc)
             or not any(registered(x) == registered(expected) for x in origins)
@@ -263,7 +269,7 @@ def security(m, c):
                 [],
             )
         safe.append(url)
-    reason = "Authenticated relay; operator-vouched original sender and permitted HTTPS domains" if relay and ex.get("operator_verified_original") else "Aligned sender and permitted HTTPS link domains"
+    reason = "Authenticated relay; operator-vouched original sender and permitted HTTPS domains" if relay and (ex or {}).get("operator_verified_original") else "Aligned sender and permitted HTTPS link domains"
     return "verified", reason, safe
 
 

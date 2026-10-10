@@ -41,3 +41,24 @@ class ExtractionExceptions(unittest.TestCase):
         self.assertIn('operator-vouched',security(m,c)[1])
         m['auth']=[]
         self.assertEqual(security(m,c)[0],'uncertain')
+
+    def test_forwarder_original_header_requires_gmail_arc(self):
+        def message(arc='pass', origin='shop.example', extra=None):
+            headers=[{'name':'From','value':'alias@relay.example'},
+                     {'name':'X-SimpleLogin-Original-From','value':'Shop <news@shop.example>'},
+                     {'name':'Authentication-Results','value':f'mx.google.com; dkim=pass header.d=relay.example; arc={arc} (i=1 dkim=pass dkdomain={origin} dmarc=pass fromdomain={origin})'}]
+            if extra: headers.append(extra)
+            return normalize({'id':'x','payload':{'headers':headers}})
+        c={'alias_domains':['relay.example']}
+        good=message();self.assertEqual(good['original_sender'],'news@shop.example')
+        self.assertEqual(security(good,c)[0],'verified')
+        for bad in [message('fail'),message(origin='evil.example'),message(extra={'name':'X-Original-From','value':'other@shop.example'}),message(extra={'name':'X-SimpleLogin-Original-From','value':'news@shop.example'})]:
+            self.assertEqual(security(bad,c)[0],'uncertain')
+        forged=message();forged['auth']=['attacker.example; arc=pass (dmarc=pass fromdomain=shop.example)',good['auth'][0]]
+        self.assertEqual(security(forged,c)[0],'uncertain')
+        badroute=message();badroute['auth']=['mx.google.com; dkim=fail header.d=relay.example; arc=pass (dmarc=pass fromdomain=shop.example)']
+        self.assertEqual(security(badroute,c)[0],'uncertain')
+        direct=message();direct['sender']='news@another.example'
+        self.assertEqual(security(direct,c)[0],'uncertain')
+        good['links']=['https://shop.example.evil.example']
+        self.assertEqual(security(good,c)[0],'uncertain')
