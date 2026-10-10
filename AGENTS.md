@@ -284,8 +284,8 @@ include visual titles with case-insensitive deduplication. An invalid extraction
 gets at most one re-read; unresolved visual failures stop digest generation.
 The current senior adapter is text-only: it cannot repair unread images by claiming
 to see them. Extracted text is model output, not infallible OCR; inspect real-batch
-results before claiming quality. Approved image coverage is bounded to 12 per source;
-missing approved assets or exceeding this limit blocks the image-aware summary.
+results before claiming quality. Approved images are processed in resumable passes;
+missing approved assets block the image-aware summary.
 
 Senior visual corrections may be stored locally under `vision-cache/reviews/<key>.json`,
 keyed by image fingerprint, model config and contract version. Require image hash,
@@ -305,3 +305,27 @@ for selected verified candidates, with the existing evidence cache. Presentation
 sender grouping is deterministic; it must not summon a grouping model. Pubmail's
 model calls share `state_dir/inference.lock`; do not bypass it with overlapping
 manual probes. This lock serialises this project's inference, not other host apps.
+
+### Resumable image work
+There is no 12-image ceiling. Each source is processed serially in bounded passes:
+```yaml
+image_loading:
+  downloads_per_pass: 16  # New downloads; cached artwork does not consume this budget.
+vision:
+  images_per_pass: 4     # New image extractions, each with at most one validation retry.
+  pass_seconds: 120      # Soft budget checked before starting another image.
+```
+Keep existing enabled/hosts/model settings. Limits must be positive integers (downloads
+1–256, images 1–128, seconds 1–3600). A model call already in progress can exceed the
+soft pass duration; its configured timeout still applies. Validated evidence is saved
+after every image. Cache keys include image bytes, model configuration and extraction
+contract, not processing budgets. Restart the same preview to consume the next pass;
+already validated images require no inference. No partial summary or send is permitted.
+`ProcessingPending` is resumable; unreadable images and failed downloads are real errors,
+not automatic-retry instructions. Scheduling remains unchanged. Never retry ambiguous
+senior-agent or SMTP attempts as a side effect of resuming image work.
+
+The CLI exits **75** for pending image work (resume the same command), and **1**
+for an actual failure. Do not treat every nonzero exit as permission to retry.
+Plan previews now regenerate normal-item summaries with visual evidence; their
+private JSON retains source evidence for inspection, but creates no delivery or labels.

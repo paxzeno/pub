@@ -181,6 +181,8 @@ class EscalatingModel(Model):
     def __init__(self,c,store):
         super().__init__(c); self.local=Model(c); self.reviewer=ReviewQueue(c,store)
     def classify(self,m):
+        from .vision import enrich
+        m = enrich(m, self.c)  # Never send partial image work to a text-only reviewer.
         try: return self.local.classify(m)
         except Error:
             if 'model_failure' not in self.reviewer.chain.get('escalate_on',[]): raise

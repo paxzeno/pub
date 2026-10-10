@@ -8,6 +8,11 @@ class Error(RuntimeError):
     pass
 
 
+class ProcessingPending(Error):
+    """A bounded image pass saved progress; rerun the same input to resume."""
+    pass
+
+
 def run(argv, *, env=None, input=None, timeout=90):
     try:
         r = subprocess.run(
@@ -60,6 +65,16 @@ def load_config(path):
         raise Error('Invalid vision configuration')
     if vision.get('enabled') and not c.get('image_loading',{}).get('enabled'):
         raise Error('Vision extraction requires approved image loading')
+    if not isinstance(c.get('image_loading', {}), dict):
+        raise Error('Invalid image loading configuration')
+    for section, key, default, maximum in (
+        (vision, 'images_per_pass', 4, 128),
+        (vision, 'pass_seconds', 120, 3600),
+        (c.get('image_loading', {}), 'downloads_per_pass', 16, 256),
+    ):
+        value = section.get(key, default)
+        if type(value) is not int or not 1 <= value <= maximum:
+            raise Error(f'{key} must be an integer from 1 to {maximum}')
     controls = c.get("unsubscribe_controls", {})
     images = c.get("image_loading", {})
     if not isinstance(controls, dict) or not isinstance(images, dict) or type(images.get("enabled", False)) is not bool:

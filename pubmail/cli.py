@@ -2,7 +2,7 @@ from __future__ import annotations
 import argparse, json, os
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from .io import Error, Gmail, Store, load_config
+from .io import Error, ProcessingPending, Gmail, Store, load_config
 from .reviewer import EscalatingModel
 from . import workflow, digest
 
@@ -139,6 +139,8 @@ def main():
             digest.finish_labels(gmail, c, store, args.id, p)
             out = {"reconciled": args.id}
         print(json.dumps(out, ensure_ascii=False))
+    except ProcessingPending as e:
+        parser.exit(75, f"pubmail: pending image work: {e}\n")
     except Error as e:
         parser.exit(1, f"pubmail: {e}\n")
     finally:

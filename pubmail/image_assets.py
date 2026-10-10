@@ -76,13 +76,17 @@ def assets(markup, c):
     parser=Sources();parser.feed(markup[:200000]);out={}
     strict=c.get('vision',{}).get('enabled',False)
     from .io import Error
-    if strict and len(parser.urls)>12:raise Error('Approved image count exceeds vision budget')
+    from .io import ProcessingPending
+    downloaded = 0
     root=Path(c['state_dir'])/'image-cache';root.mkdir(mode=0o700,exist_ok=True)
-    for url in parser.urls[:12]:
+    for url in parser.urls:
         path=root/(hashlib.sha256(url.encode()).hexdigest()+'.json')
         if path.exists():
             cached=json.loads(path.read_text())
         else:
+            if downloaded >= policy.get('downloads_per_pass', 16):
+                raise ProcessingPending('Artwork download pass saved; rerun to resume remaining images')
+            downloaded += 1
             try:cached={'data':base64.b64encode(fetch(url)).decode()}
             except Exception:cached={'data':None}
             private_write(path,json.dumps(cached))

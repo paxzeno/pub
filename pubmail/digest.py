@@ -7,7 +7,7 @@ from email.utils import formatdate
 from zoneinfo import ZoneInfo
 from jinja2 import Environment, PackageLoader, select_autoescape
 from .core import normalize, security, safe_text
-from .io import Error, private_write, run
+from .io import Error, ProcessingPending, private_write, run
 
 
 def summary_blocks(summary):
@@ -267,6 +267,8 @@ def prepare(gmail, c, model, store):
                     )
                 }
             )
+        except ProcessingPending:
+            raise
         except Error:
             # No false "digested" marking when summarization failed.
             raise Error("Digest summarization failed; nothing sent or marked")
@@ -385,11 +387,29 @@ def preview_plan(c, model, store, plan_id):
     if not row:
         raise Error("Unknown plan")
     p = json.loads(row[0])
-    items = [d for d in p["decisions"] if d["action"] == "archive"]
+    items = [dict(d) for d in p["decisions"] if d["action"] == "archive"]
+    from .vision import enrich
+    pending = []
+    for item in items:
+        try:
+            item['message'] = enrich(item['message'], c)
+        except ProcessingPending as exc:
+            pending.append(str(exc))
+    if pending:
+        raise ProcessingPending('; '.join(pending))
+    for item in items:
+        result = model.classify(item['message'])
+        item.update({key: result.get(key) for key in (
+            'title', 'summary', 'topic', 'deadline', 'deadline_date', 'deadline_evidence')})
+        sec, reason, urls = security(item['message'], c)
+        if sec != 'verified':
+            raise Error('Preview source security changed; generate a fresh plan')
+        item.update(security=sec, security_reason=reason, safe_urls=urls)
     flagged = [d for d in p["decisions"] if d["action"] == "review"]
     groups = [[i["id"]] for i in items]
     h, t, _ = render(c, items, groups, flagged, inline=True)
     prefix = store.root / "plans" / (plan_id + "-newsletter")
     private_write(str(prefix) + ".html", h)
     private_write(str(prefix) + ".txt", t)
+    private_write(str(prefix) + ".json", json.dumps({'items':items,'groups':groups,'flagged':flagged}))
     return {"plan": plan_id, "preview": str(prefix) + ".html", "sendable": False}

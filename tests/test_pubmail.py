@@ -109,7 +109,9 @@ class Case(unittest.TestCase):
 
     def test_plan_newsletter_preview_cannot_be_sent(self):
         p, h = self.plan()
+        self.model.classify.return_value = dict(title='Updated source summary', summary='Current offer details', topic='Sale', deadline=None)
         result = digest.preview_plan(self.c, self.model, self.store, p["id"])
+        self.assertIn('Current offer details', Path(result['preview']).read_text())
         self.assertFalse(result["sendable"])
         self.assertEqual(self.g.calls, [])
         self.assertEqual(

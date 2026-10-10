@@ -166,6 +166,7 @@ ignored_tracking_domain_suffixes:
 
 # Remote artwork only, never browser networking or tracking pixels. Optional.
 image_loading:
+  downloads_per_pass: 16
   enabled: false
   hosts:
     d3k81ch9hvuctc.cloudfront.net:
@@ -183,5 +184,7 @@ unsubscribe_controls:
 
 # Image evidence before summaries; uses model above unless overridden.
 vision:
+  images_per_pass: 4
+  pass_seconds: 120
   enabled: false
   model: {}
