@@ -37,3 +37,34 @@ def extract_offer_timing(body):
             return {}
         return {'deadline':dt.isoformat(),'deadline_evidence':evidence+'\n'+t[0], 'deadline_date':None}
     return {'deadline':None,'deadline_date':end_date.isoformat(),'deadline_evidence':evidence}
+
+
+def extract_event_timing(body, subject=''):
+    """Extract one explicit event range; subject year may qualify a yearless range.
+
+    Never use the receipt/current year, nor an unrelated year elsewhere in the body.
+    Ambiguous multiple ranges are left unresolved.
+    """
+    source = re.sub(r'\s+', ' ', body).strip()
+    pattern = MONTH + r'\s+(\d{1,2})\s*(?:[–—-]|to)\s*(\d{1,2})(?:,?\s+(20\d{2}))?\b'
+    candidates = []
+    for hit in re.finditer(pattern, source, re.I):
+        context = source[max(0, hit.start()-160):hit.start()]
+        if not re.search(r'\b(?:find us at|event|tournament|conference|festival|visit our booth)\b', context, re.I):
+            continue
+        month, start, end, year = hit.groups()
+        evidence = source[max(0, hit.start()-160):hit.end()]
+        if not year:
+            years = set(re.findall(r'\b20\d{2}\b', subject))
+            if len(years) != 1:
+                continue
+            year = years.pop()
+            evidence = subject + '\n' + evidence
+        try:
+            first = date(int(year), MONTHS[month.lower()], int(start))
+            last = date(int(year), MONTHS[month.lower()], int(end))
+        except ValueError:
+            continue
+        if first <= last:
+            candidates.append({'start':first.isoformat(), 'end':last.isoformat(), 'evidence':evidence})
+    return candidates[0] if len(candidates) == 1 else None

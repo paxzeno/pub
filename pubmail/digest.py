@@ -52,6 +52,15 @@ def render(c, items, groups, flagged, now=None, inline=False):
                 expired = day < now.astimezone(ZoneInfo(c["timezone"])).date()
                 display = day.strftime("%d %b %Y") + " (time not supplied)"
                 deadline = i["deadline_date"]
+            from .timing import extract_event_timing
+            event = extract_event_timing(m.get("body", ""), m.get("subject", ""))
+            event_display = ""
+            event_status = ""
+            if event:
+                first, last = date.fromisoformat(event["start"]), date.fromisoformat(event["end"])
+                today = now.astimezone(ZoneInfo(c["timezone"])).date()
+                event_status = "ENDED" if last < today else "UPCOMING" if first > today else "ONGOING"
+                event_display = first.strftime("%d %b %Y") + " – " + last.strftime("%d %b %Y") + " (times not supplied)"
             unsub = next(
                 (u for u in m.get("unsubscribe", []) if u in i.get("safe_urls", [])),
                 None,
@@ -70,12 +79,16 @@ def render(c, items, groups, flagged, now=None, inline=False):
                     deadline=deadline,
                     expired=expired,
                     deadline_display=display,
+                    event_status=event_status,
+                    event_display=event_display,
                     sender=m["original_sender"],
                     original_url=original,
                     unsubscribe=unsub,
                 )
             )
             text += [i["summary"]]
+            if event:
+                text += ["EVENT " + event_status + ": " + event_display]
             if deadline:
                 text += [("EXPIRED" if expired else "DEADLINE") + ": " + display]
             text += ["From: " + m["original_sender"], "Original: " + original]

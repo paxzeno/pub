@@ -54,6 +54,9 @@
     <p style="font-size:17px;line-height:1.7;margin:0 0 16px;overflow-wrap:anywhere">{% if block.title %}<strong>&#8226;&nbsp;{{ block.title }}</strong><br>{{ block.text }}{% else %}&#8226;&nbsp;{{ block.text }}{% endif %}</p>
     {% else %}<p style="font-size:17px;line-height:1.7;margin:0 0 16px;overflow-wrap:anywhere">{{ block.text }}</p>{% endif %}
     {% endfor %}
+    {% if item.event_display %}
+    <p style="font-size:14px;line-height:1.6;font-weight:bold;margin:0 0 18px;padding:10px 12px;border-left:3px solid {% if item.event_status == 'ENDED' %}#a92932{% else %}#4b5a2d{% endif %};color:{% if item.event_status == 'ENDED' %}#a92932{% else %}#4b5a2d{% endif %}">EVENT {{ item.event_status }}<br>{{ item.event_display }}</p>
+    {% endif %}
     {% if item.deadline %}
     <p style="font-size:14px;line-height:1.6;font-weight:bold;margin:0 0 18px;padding:10px 12px;border-radius:0 8px 8px 0;border-left:3px solid {% if item.expired %}#a92932{% else %}#4b5a2d{% endif %};background:{% if item.expired %}#fff1f1{% else %}#f0f5e5{% endif %};color:{% if item.expired %}#a92932{% else %}#4b5a2d{% endif %}">{% if item.expired %}EXPIRED{% else %}DEADLINE{% endif %}<br>{{ item.deadline_display }}</p>
     {% endif %}

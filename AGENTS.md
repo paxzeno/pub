@@ -199,3 +199,9 @@ Research-backed common tracker exclusions and sources are in
 `ignored_tracking_domain_suffixes` supports strict subdomains of documented
 tracking-only infrastructure. This explicit suffix field does not accept substring
 or wildcard patterns, and must never contain general hosting/provider roots.
+
+Event timing is separate from offer deadlines. At render time, explicit single
+event date ranges are extracted from source text (including cached summaries).
+A unique subject year may qualify a yearless event range; receipt/current years
+are never substituted. Badges show UPCOMING, ONGOING or ENDED and both dates.
+Times are not invented; ambiguous ranges remain unresolved.

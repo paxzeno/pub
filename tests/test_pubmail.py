@@ -308,6 +308,18 @@ class Case(unittest.TestCase):
         self.assertIn("EXPIRED", h)
         self.assertIn("EXPIRED", t)
 
+    def test_event_badge_survives_cached_summary(self):
+        items = self.items()
+        items[0]['deadline'] = None
+        items[0]['message'].update(body='Find us at Example Arena, Aug 20-23', subject='Tournament 2026')
+        for day, status in [(19, 'UPCOMING'), (22, 'ONGOING'), (24, 'ENDED')]:
+            h, t, _ = digest.render(self.c, items, [['a1']], [], now=datetime(2026,8,day,tzinfo=timezone.utc))
+            self.assertIn('EVENT ' + status, h)
+            self.assertIn('EVENT ' + status, t)
+            self.assertIn('20 Aug 2026', t)
+            self.assertIn('23 Aug 2026', t)
+            self.assertNotIn('EXPIRED', t)
+
     def test_suspicious_no_links(self):
         h, t, imgs = digest.render(self.c, [], [], self.items())
         self.assertNotIn("href=", h)

@@ -19,3 +19,15 @@ class TimingLists(unittest.TestCase):
         self.assertEqual(len(b),2)
         self.assertEqual(b[0]['title'],'First')
         self.assertEqual(b[1]['text'],'No description supplied.')
+
+    def test_event_range_subject_year_and_ambiguity(self):
+        from pubmail.timing import extract_event_timing as extract
+        body='Backing the tournament since 2019. Find us at\nExample Arena, City\nAug 20-23'
+        t=extract(body, 'Tournament 2026: visit our booth')
+        self.assertEqual((t['start'],t['end']),('2026-08-20','2026-08-23'))
+        self.assertIn('Tournament 2026',t['evidence'])
+        self.assertIsNone(extract(body, 'Tournament'))
+        self.assertIsNone(extract(body, 'Tournament 2025 or 2026'))
+        self.assertIsNone(extract('Event Feb 20-31, 2026'))
+        self.assertIsNone(extract('Event Aug 20-23, 2026. Event Sep 20-23, 2026.'))
+        self.assertIsNone(extract('Offer valid Aug 20-23, 2026.'))
