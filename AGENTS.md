@@ -351,3 +351,11 @@ not edit the stored plan, approve archiving or set newsletter-delivered labels.
 Explicit single-date “Offer ends/expires Month Day, Year” cutoffs also get
 EXPIRED/deadline badges, including cached summaries. Date-only extraction does
 not invent a time; retain any source-stated time in the summary/original.
+
+### Inline image identity
+Bind Content-ID and image filename to the MIME message ID, source message ID and
+image-byte hash. Never reuse positional IDs such as topic-0 across newsletters:
+mail clients may reuse cached inline parts when card order changes. Every HTML cid
+reference must resolve to exactly one attached image in that message. Verify source
+association, not only attachment counts. A browser preview alone cannot prove a mail
+client will display the newly transmitted image.

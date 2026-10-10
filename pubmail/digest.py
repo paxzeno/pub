@@ -25,7 +25,7 @@ def summary_blocks(summary):
     return blocks
 
 
-def render(c, items, groups, flagged, now=None, inline=False):
+def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None):
     now = now or datetime.now(ZoneInfo(c["timezone"]))
     lookup = {i["id"]: i for i in items}
     # Topic groups determine ordering, not visual card boundaries. Each verified
@@ -133,7 +133,9 @@ def render(c, items, groups, flagged, now=None, inline=False):
         from .image_assets import assets
         image_entries = tuple(assets(original.get("original_html", ""), c).items())
         data = screenshot(original.get("original_html", ""), original.get("body", ""), image_entries)
-        cid = f"topic-{n}@pubmail"
+        # Bind to this source/image and MIME message, never just its card position.
+        binding = json.dumps([cid_namespace, original['id'], hashlib.sha256(data).hexdigest()])
+        cid = 'image-' + hashlib.sha256(binding.encode()).hexdigest() + '@pubmail'
         images[cid] = data
         thumbnail = (
             ("data:image/png;base64," + base64.b64encode(data).decode())
@@ -183,7 +185,7 @@ def render(c, items, groups, flagged, now=None, inline=False):
 
 
 def mime(c, items, groups, flagged, id):
-    h, t, images = render(c, items, groups, flagged)
+    h, t, images = render(c, items, groups, flagged, cid_namespace=id)
     n = c["newsletter"]
     msg = EmailMessage(policy=SMTP)
     msg["From"] = n["sender"]
@@ -207,7 +209,7 @@ def mime(c, items, groups, flagged, id):
                 maintype="image",
                 subtype="png",
                 cid=f"<{cid}>",
-                filename="topic.png",
+                filename=cid.split("@")[0] + ".png",
                 disposition="inline",
             )
     return msg

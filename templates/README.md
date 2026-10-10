@@ -36,3 +36,11 @@ compatibility in every email client; test delivery separately before enabling sc
 Bullet summaries use a hanging bullet column and bold title, with the description
 on its own line. Inline table structure preserves separation in mail clients that
 strip whitespace CSS. Date-only deadlines explicitly state that no time was supplied.
+
+### Inline image identity
+Bind Content-ID and image filename to the MIME message ID, source message ID and
+image-byte hash. Never reuse positional IDs such as topic-0 across newsletters:
+mail clients may reuse cached inline parts when card order changes. Every HTML cid
+reference must resolve to exactly one attached image in that message. Verify source
+association, not only attachment counts. A browser preview alone cannot prove a mail
+client will display the newly transmitted image.

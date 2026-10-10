@@ -56,3 +56,23 @@ class LinkDiagnostics(unittest.TestCase):
         from pubmail.timing import extract_offer_timing
         self.assertEqual(extract_offer_timing('Offer ends September 13, 2026.')['deadline_date'],'2026-09-13')
         self.assertEqual(extract_offer_timing('Offer ends September 13.'),{})
+
+    @patch('pubmail.thumbnail.screenshot',return_value=b'png')
+    def test_cids_bound_to_message_source_and_bytes(self,shot):
+        from pubmail.digest import mime
+        m=normalize(raw());c=conf('/tmp')
+        item={'id':m['id'],'message':m,'title':'Offer','summary':'Offer','deadline':None}
+        first=mime(c,[item],[[m['id']]],[],'first')
+        second=mime(c,[item],[[m['id']]],[],'second')
+        def image_parts(msg):return [p for p in msg.walk() if p.get_content_maintype()=='image']
+        a=image_parts(first)[0];b=image_parts(second)[0]
+        self.assertNotEqual(a['Content-ID'],b['Content-ID'])
+        self.assertNotEqual(a.get_filename(),b.get_filename())
+        html=next(p.get_content() for p in second.walk() if p.get_content_type()=='text/html')
+        self.assertIn('cid:'+b['Content-ID'].strip('<>'),html)
+        shot.return_value=b'different png'
+        changed=image_parts(mime(c,[item],[[m['id']]],[],'second'))[0]
+        self.assertNotEqual(b['Content-ID'],changed['Content-ID'])
+        m['id']='new-source';item['id']='new-source'
+        changed_source=image_parts(mime(c,[item],[['new-source']],[],'second'))[0]
+        self.assertNotEqual(changed['Content-ID'],changed_source['Content-ID'])
