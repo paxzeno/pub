@@ -15,3 +15,10 @@ Readability: full-width 17 px summaries, 14 px source/deadline details, and at l
 the whole summary. At 520 px and below, gutters shrink and action links stack.
 Inline defaults remain readable when a client strips media queries. Desktop width
 is capped at 680 px to keep line lengths comfortable.
+
+Visual direction: an editorial charcoal masthead, restrained lime accents, numbered
+topic headers, bold sans-serif titles and pill-shaped primary actions. The review
+section uses its own amber treatment; expired deadlines retain explicit red labels.
+All essential styling stays inline; no web fonts, external images or CSS dependencies.
+The opening topic has a light accent panel, followed by quieter white supporting
+items. This is visual hierarchy, not an inferred importance ranking.

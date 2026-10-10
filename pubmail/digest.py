@@ -12,7 +12,7 @@ from .io import Error, private_write, run
 
 def tile(index):
     # Tiny geometric topic thumbnail. Generated locally, no remote assets/tracking.
-    palette = [(34, 86, 72), (66, 96, 131), (147, 101, 55), (105, 81, 119)]
+    palette = [(32, 34, 31), (54, 61, 44), (73, 76, 63), (42, 51, 47)]
     bg = palette[index % len(palette)]
 
     def chunk(t, data):
@@ -28,7 +28,7 @@ def tile(index):
         row = bytearray()
         for x in range(64):
             stripe = 18 <= x < 46 and (18 <= y < 22 or 29 <= y < 33 or 40 <= y < 44)
-            row.extend((236, 235, 219) if stripe else bg)
+            row.extend((216, 235, 164) if stripe else bg)
         rows.append(b"\0" + row)
     return (
         b"\x89PNG\r\n\x1a\n"
