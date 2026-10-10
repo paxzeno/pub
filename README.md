@@ -328,3 +328,52 @@ AGENTS.md for bounds and privacy tradeoffs. This feature does not perform OCR or
 add image-only details to model summaries. `unsubscribe_controls` preserves approved
 header-only subscription links independently of discarded click trackers; no
 unsubscribe request is executed automatically.
+
+### Choosing a model for image understanding
+Choose the **installed model and serving backend** by supported input types, not
+by vendor name. Image-heavy newsletters need OCR/text reading AND visual recognition.
+A text-only model can summarise extracted text but cannot read a poster it never sees.
+
+For a local Ollama deployment, `qwen3.5:latest` is a working candidate: the tested
+9.7B Q4_K_M installation reports `vision`, and a real poster-reading probe succeeded.
+Tags can change: verify your own installed version, then pin it for repeatability.
+The inspected `nemotron-3-nano:4b` and its invoice-specific attachment derivative
+reported text capabilities, not vision. This is not a claim about every NVIDIA model;
+a different NVIDIA vision model/backend may be suitable after the same checks.
+
+Check local metadata (no email content is sent):
+```sh
+curl -s http://127.0.0.1:11434/api/show \
+  -H 'Content-Type: application/json' \
+  -d '{"model":"qwen3.5:latest"}'
+```
+Require `vision` in `capabilities`, then test with a non-sensitive image containing
+known text. Check titles, small print and dates, not only broad image descriptions.
+The same vision model may handle text tasks, or a future adapter can use a dedicated
+image extractor and a text summariser. No particular vendor is required.
+
+Existing model selection uses these **supported** YAML keys:
+```yaml
+model:
+  endpoint: http://127.0.0.1:11434/api/chat
+  name: qwen3.5:latest
+  allow_remote: false
+  timeout_seconds: 180
+  max_output_tokens: 1800
+```
+This is a partial example; retain other config sections. `image_loading.enabled`
+controls approved artwork fetching, not model vision. Do not add an imaginary
+`vision: true` switch and assume that image extraction is enabled.
+
+**Integration status:** the current model client sends text only. Choosing a vision
+model does not yet make newsletter summaries read images. The required change is
+to pass approved cached image bytes through native Ollama `messages[].images` or an
+OpenAI-compatible image-content interface, then validate and merge the extracted
+evidence before summarisation. See [AGENTS.md](AGENTS.md#required-vision-extraction-pipeline)
+for the implementation and acceptance contract. Automatic image-to-summary handling
+must pass those checks before it is advertised as operational.
+
+Keep image inference local by default. A remote backend requires explicit remote
+processing consent and appropriate authentication; approved image downloads do not
+authorise uploading email artwork to an unrelated service. Never send image-only
+content to a text-only fallback while claiming it received equivalent evidence.

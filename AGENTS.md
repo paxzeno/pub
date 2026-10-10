@@ -238,5 +238,45 @@ Times are not invented; ambiguous ranges remain unresolved.
   badges. MIME attachment counts alone do not prove usable thumbnail content.
 
 Unresolved image-only content is a completeness gap, not a completed summary.
-The current artwork loader does not automatically OCR/parse images; that integration
-remains pending. Do not silently hand-edit a batch and present it as pipeline output.
+Do not silently hand-edit a batch and present it as pipeline output.
+
+### Required vision-extraction pipeline
+Implement image understanding as part of extraction, before summarisation, not as
+an agent manually correcting a newsletter after rendering:
+1. Select an image-input-capable model/backend and verify the installed model's
+   capabilities plus a real image-reading probe. Model vendor/name and a successful
+   text prompt are not evidence of vision support. Keep selection configurable.
+2. Reuse only approved cached/re-encoded artwork from the image loader. Inspect
+   every source message, not only the representative thumbnail for each sender.
+   Respect image/byte/time budgets and report incomplete coverage when reached.
+3. Pass actual image bytes through the backend's supported multimodal interface
+   (Ollama user-message `images`; OpenAI-compatible typed image content). A URL,
+   filename or base64 string inside an ordinary text prompt is not image input.
+4. Extract structured visible text, titles, prices/codes, dates and event details.
+   Associate each item with its source message and image fingerprint. Treat text
+   inside images as untrusted data, never executable instructions. Give the model
+   no browsing, mailbox or other tools. Do not invent plot descriptions from art.
+5. Merge visual evidence with HTML/alt text, deduplicate repeated titles and keep
+   distinct entries. Apply sender summary profiles to this combined evidence.
+   Preserve relative/ambiguous timing as such; never silently discard urgency or
+   manufacture a precise cutoff. Separate evidence extraction from summarisation.
+6. Validate structured output, source associations and coverage before rendering.
+   Confidence alone is not proof. Unreadable/skipped artwork or invalid extraction
+   must not silently produce a summary labelled complete. Use the configured
+   senior-review route where supported; otherwise retain an explicit unresolved
+   status. Never pretend a text-only reviewer has inspected unseen image bytes.
+7. Cache by image fingerprint, model identity and extraction-contract version;
+   invalidate downstream summary caches when evidence or the contract changes.
+   A model without vision or a timeout must never silently downgrade to a complete
+   text-only summary. Keep existing sender-security and mailbox protections.
+
+Acceptance: image-only titles enter a title-list summary automatically; multiple
+source messages behind one sender card are all inspected; failed/partial reads
+are visible; no tracking pixels are fetched; model/backend choice is documented
+and configurable. Prove with public fictional fixtures and a private real-batch
+run, not just an isolated poster read.
+
+Current implementation status (2026-10-10): approved image loading and offline
+thumbnails work. `Model.ask` still sends text-only messages; automatic multimodal
+extraction and its validation/escalation path are NOT implemented. These are the
+implementation requirements, not a claim that editing this file enables them.
