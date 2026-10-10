@@ -1,29 +1,76 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ title }}</title></head>
-<body style="margin:0;background:#f3f1ec;color:#233432;font-family:Arial,Helvetica,sans-serif">
-<div style="display:none;max-height:0;overflow:hidden">Your promotions, gathered into a quieter weekly read.</div>
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:28px 12px">
-<table role="presentation" width="640" cellpadding="0" cellspacing="0" style="width:100%;max-width:640px">
-<tr><td style="background:#173e38;border-radius:16px 16px 0 0;padding:34px 32px;color:#fff">
-<p style="margin:0 0 12px;font-size:11px;letter-spacing:3px;color:#c8dcd2">THE WEEKLY EDIT · {{ date }}</p>
-<h1 style="margin:0;font-family:Georgia,serif;font-size:34px;font-weight:normal;line-height:1.15">A little less inbox.<br>A little more perspective.</h1>
-<p style="margin:18px 0 0;color:#d4e3db;font-size:14px;line-height:1.6">{{ count }} messages, thoughtfully gathered. Browse what interests you; leave the rest.</p>
-</td></tr><tr><td style="height:20px"></td></tr>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <title>{{ title }}</title>
+  <style>
+    body, table, td, a { -webkit-text-size-adjust:100%; -ms-text-size-adjust:100%; }
+    table { border-spacing:0; mso-table-lspace:0pt; mso-table-rspace:0pt; }
+    a:focus { outline:3px solid #b47b22; outline-offset:3px; }
+    @media screen and (max-width:520px) {
+      .outer { padding:12px 8px !important; }
+      .panel { padding:24px 18px !important; }
+      .hero-title { font-size:28px !important; line-height:1.2 !important; }
+      .topic-title { font-size:24px !important; }
+      .action { display:block !important; text-align:center !important; margin-right:0 !important; }
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f3f1ec;color:#233432;font-family:Arial,Helvetica,sans-serif">
+<div style="display:none;max-height:0;overflow:hidden;mso-hide:all">Your promotions, gathered into a quieter weekly read.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed">
+<tr><td class="outer" align="center" style="padding:32px 16px">
+<table role="presentation" width="680" cellpadding="0" cellspacing="0" style="width:100%;max-width:680px;table-layout:fixed">
+<tr><td class="panel" style="background:#173e38;border-radius:16px;padding:36px 32px;color:#fff">
+  <p style="margin:0 0 8px;font-size:13px;line-height:1.5;letter-spacing:2px;color:#d4e3db">THE WEEKLY EDIT</p>
+  <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#d4e3db">{{ date }}</p>
+  <h1 class="hero-title" style="margin:0;font-family:Georgia,serif;font-size:36px;font-weight:normal;line-height:1.2;overflow-wrap:break-word">Your week.<br>A little less inbox.</h1>
+  <p style="margin:20px 0 0;font-size:16px;line-height:1.65;color:#edf3ef">{{ count }} messages, gathered by topic.<br>Read what interests you. Leave the rest.</p>
+</td></tr>
+<tr><td height="20" style="font-size:0;line-height:0">&nbsp;</td></tr>
 {% for card in cards %}
-<tr><td style="background:#fff;border-radius:12px;padding:24px;border:1px solid #e2e5df">
-<table role="presentation" width="100%"><tr><td width="76" valign="top"><img src="{{ card.thumbnail }}" width="64" height="64" alt="Topic {{ loop.index }}" style="display:block;border-radius:12px"></td>
-<td valign="top"><p style="margin:0 0 7px;color:#65776d;font-size:10px;letter-spacing:2px">{{ card.sources }} MESSAGE{% if card.sources != 1 %}S{% endif %} · CURATED TOPIC</p>
-<h2 style="font-family:Georgia,serif;font-weight:normal;font-size:23px;line-height:1.25;margin:0 0 14px">{{ card.title }}</h2>
-{% for item in card["items"] %}
-<p style="font-size:14px;line-height:1.7;margin:0 0 10px">{{ item.summary }}</p>
-{% if item.deadline %}<p style="font-size:12px;font-weight:bold;color:{% if item.expired %}#a92932{% else %}#725520{% endif %};margin:8px 0">{% if item.expired %}EXPIRED{% else %}DEADLINE{% endif %} · {{ item.deadline_display }}</p>{% endif %}
-<p style="font-size:11px;color:#66746d;margin:8px 0 15px">{{ item.sender }}<br><a href="{{ item.original_url }}" style="color:#24594c">Open original</a>{% if item.unsubscribe %} &nbsp;·&nbsp; <a href="{{ item.unsubscribe }}" style="color:#596b63">Unsubscribe from this sender</a>{% endif %}</p>
-{% endfor %}</td></tr></table></td></tr><tr><td style="height:14px"></td></tr>
+<tr><td class="panel" style="background:#fff;border-radius:12px;padding:28px 32px;border:1px solid #dde2db;overflow-wrap:anywhere;word-wrap:break-word">
+  <!-- Thumbnail accompanies the heading only: summaries get the full card width. -->
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;margin-bottom:16px">
+    <tr><td width="60" valign="middle"><img src="{{ card.thumbnail }}" width="44" height="44" alt="" style="display:block;border:0;border-radius:10px"></td>
+    <td valign="middle" style="font-size:13px;line-height:1.5;color:#526359">TOPIC {{ loop.index }}<br>{{ card.sources }} message{% if card.sources != 1 %}s{% endif %}</td></tr>
+  </table>
+  <h2 class="topic-title" style="font-family:Georgia,serif;font-weight:normal;font-size:28px;line-height:1.25;margin:0 0 20px;overflow-wrap:anywhere">{{ card.title }}</h2>
+  {% for item in card["items"] %}
+  <div{% if not loop.first %} style="border-top:1px solid #e2e5df;padding-top:24px;margin-top:24px"{% endif %}>
+    <p style="font-size:14px;line-height:1.6;color:#526359;margin:0 0 10px;overflow-wrap:anywhere;word-break:break-word">From {{ item.sender }}</p>
+    <p style="font-size:17px;line-height:1.7;margin:0 0 16px;overflow-wrap:anywhere">{{ item.summary }}</p>
+    {% if item.deadline %}
+    <p style="font-size:14px;line-height:1.6;font-weight:bold;margin:0 0 18px;padding:10px 12px;border-left:3px solid {% if item.expired %}#a92932{% else %}#725520{% endif %};background:{% if item.expired %}#fff1f1{% else %}#faf5e9{% endif %};color:{% if item.expired %}#a92932{% else %}#725520{% endif %}">{% if item.expired %}EXPIRED{% else %}DEADLINE{% endif %}<br>{{ item.deadline_display }}</p>
+    {% endif %}
+    <div style="font-size:15px;line-height:1.4">
+      <a class="action" href="{{ item.original_url }}" style="display:inline-block;padding:12px 16px;min-height:20px;margin:0 8px 8px 0;border:1px solid #24594c;border-radius:6px;background:#24594c;color:#fff;text-decoration:none;font-weight:bold">Read original email</a>
+      {% if item.unsubscribe %}<a class="action" href="{{ item.unsubscribe }}" style="display:inline-block;padding:12px 16px;min-height:20px;margin:0 0 8px;border:1px solid #c5cec7;border-radius:6px;color:#314d41;text-decoration:underline">Unsubscribe</a>{% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</td></tr>
+<tr><td height="18" style="font-size:0;line-height:0">&nbsp;</td></tr>
 {% endfor %}
-{% if suspicious %}<tr><td style="padding:24px;background:#fff8ed;border:1px solid #e8d8ba;border-radius:12px">
-<h2 style="font-family:Georgia,serif;font-size:23px;font-weight:normal;margin:0 0 12px">Set aside for your review</h2>
-<p style="font-size:13px;line-height:1.6">Sender or link verification needs attention. These messages remain in your inbox. No images or active links are included here.</p>
-{% for item in suspicious %}<div style="border-top:1px solid #e8d8ba;padding-top:14px;margin-top:14px;font-size:12px;line-height:1.7;overflow-wrap:anywhere"><strong>{{ item.title }}</strong><br>{{ item.summary }}<br>Sender: {{ item.sender }}<br>Received: {{ item.received }}<br>Reason: {{ item.reason }}<br>Original Gmail message ID: {{ item.id }}</div>{% endfor %}
-</td></tr>{% endif %}
-<tr><td style="padding:24px 12px;text-align:center;font-size:11px;line-height:1.7;color:#68766e">A quieter inbox, on your terms.<br>Nothing deleted. Originals remain in your mailbox.<br>Dates reflect the original offers; expired offers are explicitly marked.</td></tr>
-</table></td></tr></table></body></html>
+{% if suspicious %}
+<tr><td class="panel" style="padding:28px 32px;background:#fff8ed;border:1px solid #e8d8ba;border-radius:12px;overflow-wrap:anywhere;word-wrap:break-word">
+  <h2 style="font-family:Georgia,serif;font-size:26px;line-height:1.3;font-weight:normal;margin:0 0 16px">Set aside for your review</h2>
+  <p style="font-size:16px;line-height:1.7;margin:0 0 20px">Sender or link verification needs attention. These messages remain in your inbox. No images or active links are included here.</p>
+  {% for item in suspicious %}
+  <div style="border-top:1px solid #dfcaa6;padding-top:20px;margin-top:20px;overflow-wrap:anywhere;word-break:break-word">
+    <h3 style="font-size:18px;line-height:1.5;margin:0 0 12px">{{ item.title }}</h3>
+    <p style="font-size:16px;line-height:1.7;margin:0 0 16px">{{ item.summary }}</p>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 10px"><strong>Sender</strong><br>{{ item.sender }}</p>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 10px"><strong>Received</strong><br>{{ item.received }}</p>
+    <p style="font-size:14px;line-height:1.7;margin:0 0 10px"><strong>Why it needs review</strong><br>{{ item.reason }}</p>
+    <p style="font-size:14px;line-height:1.7;margin:0"><strong>Original Gmail message ID</strong><br>{{ item.id }}</p>
+  </div>
+  {% endfor %}
+</td></tr>
+{% endif %}
+<tr><td style="padding:28px 18px;text-align:center;font-size:14px;line-height:1.7;color:#526359">A quieter inbox, on your terms.<br>Nothing deleted. Originals remain in your mailbox.<br>Expired offers are explicitly marked.</td></tr>
+</table>
+</td></tr></table>
+</body></html>
