@@ -98,3 +98,15 @@ class LinkDiagnostics(unittest.TestCase):
             self.assertIn('cid:'+str(img['Content-ID']).strip('<>'),html)
             self.assertEqual(img.get_content_disposition(),'inline')
             self.assertEqual(img.get_payload(decode=True),b'png')
+
+    @patch('pubmail.thumbnail.screenshot',return_value=b'png')
+    def test_source_date_follows_from_in_configured_timezone(self,_):
+        c=conf('/tmp');c['timezone']='Europe/Lisbon'
+        m=normalize(raw());m['timestamp']=1787526000
+        item={'id':m['id'],'message':m,'title':'Offer','summary':'Offer','deadline':None,'security_reason':'Review'}
+        h,t,_=render(c,[item],[[m['id']]],[])
+        self.assertIn('From: '+m['original_sender']+'<br>Date: 2026-08-24 00:00:00',h)
+        self.assertIn('From: '+m['original_sender']+'\nDate: 2026-08-24 00:00:00',t)
+        h,t,_=render(c,[],[],[item])
+        self.assertIn('Date: 2026-08-24 00:00:00',h)
+        self.assertIn('\nDate: 2026-08-24 00:00:00',t)

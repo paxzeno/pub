@@ -110,6 +110,7 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
                     event_display=event_display,
                     relative_notice=relative_notice,
                     sender=m["original_sender"],
+                    received=datetime.fromtimestamp(m["timestamp"], ZoneInfo(c["timezone"])).strftime("%Y-%m-%d %H:%M:%S"),
                     original_url=original,
                     unsubscribe=unsub,
                 )
@@ -123,7 +124,7 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
                 text += ["EVENT " + event_status + ": " + event_display]
             if deadline:
                 text += [("EXPIRED" if expired else "DEADLINE") + ": " + display]
-            text += ["From: " + m["original_sender"], "Original: " + original]
+            text += ["From: " + m["original_sender"], "Date: " + datetime.fromtimestamp(m["timestamp"], ZoneInfo(c["timezone"])).strftime("%Y-%m-%d %H:%M:%S"), "Original: " + original]
             if unsub:
                 text += ["Unsubscribe: " + unsub]
             text += [""]
@@ -158,7 +159,7 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
             sender=safe_text(m["original_sender"]),
             received=datetime.fromtimestamp(
                 m["timestamp"], ZoneInfo(c["timezone"])
-            ).isoformat(),
+            ).strftime("%Y-%m-%d %H:%M:%S"),
             reason=safe_text(i["security_reason"]),
             id=m["id"],
         )
@@ -166,8 +167,8 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
         text += [
             f["title"],
             f["summary"],
-            "Sender: " + f["sender"],
-            "Received: " + f["received"],
+            "From: " + f["sender"],
+            "Date: " + f["received"],
             "Reason: " + f["reason"],
             "Original Gmail message ID: " + f["id"],
             "",
