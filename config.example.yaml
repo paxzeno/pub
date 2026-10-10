@@ -1,0 +1,60 @@
+# Copy to ~/.config/pub/config.yaml, chmod 600; never commit real identities.
+account: reader@example.com
+client: default
+state_dir: ~/.local/state/pub
+labels:
+  ads: adds
+  newsletter: adds/newsletter
+timezone: Europe/Lisbon
+# Command must print ONLY the keyring password. No shell expansion is used.
+keyring_password_command: []
+whitelist:
+  addresses: [family@example.net, accountant@example.org]
+  domains: []  # Exact domains, not wildcard trust.
+# Rules require a promotional subject match AND no protected-content markers.
+# Prefer dedicated marketing mailboxes, not entire company domains.
+advertising:
+  - sender: offers@shop.example
+    subject_regex: '(?i)weekly offers|weekend sale'
+# A recognised forwarding route is NOT endorsement of its content.
+alias_domains: [privaterelay.appleid.com]
+security_exceptions:
+  - sender: offers@shop.example
+    relay_domain: ''  # Exact authenticated relay domain, or empty for direct mail
+    # For rewriting relays, add original_domain and require matching Gmail ARC evidence.
+    # original_domain: shop.example
+    link_domains: [shop.example, click.shop.example]
+    reason: Verified this merchant's separate mailing and tracking domains
+# Normal links must match the sender's registrable domain. This map also checks
+# common claimed brands in display names; add your own brand mappings locally.
+brands:
+  paypal: [paypal.com]
+  apple: [apple.com]
+  microsoft: [microsoft.com]
+  google: [google.com]
+model:
+  endpoint: http://127.0.0.1:11434/v1/chat/completions
+  name: qwen3.5:latest
+  api_key_env: PUB_MODEL_API_KEY
+  timeout_seconds: 180
+  confidence_threshold: 0.98
+  # Remote inference sends email content off the machine; explicit opt-in.
+  allow_remote: false
+limits:
+  week_messages: 200
+  hourly_messages: 100
+  digest_messages: 200
+  body_characters: 24000
+newsletter:
+  format: multipart  # html | text | multipart
+  subject: Your weekly reading list
+  sender: digest@example.net
+  recipient: reader@example.com
+  himalaya_account: newsletter
+  sent_mailbox: Sent Messages
+  # Thumbnails are local, generated topic tiles: no tracking image downloads.
+rollout:
+  hourly_enabled: false
+  digest_enabled: false
+  # Set only after historical cleanup; epoch seconds prevents historical drift.
+  live_after: null

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ title }}</title></head>
+<body style="margin:0;background:#f3f1ec;color:#233432;font-family:Arial,Helvetica,sans-serif">
+<div style="display:none;max-height:0;overflow:hidden">Your promotions, gathered into a quieter weekly read.</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:28px 12px">
+<table role="presentation" width="640" cellpadding="0" cellspacing="0" style="width:100%;max-width:640px">
+<tr><td style="background:#173e38;border-radius:16px 16px 0 0;padding:34px 32px;color:#fff">
+<p style="margin:0 0 12px;font-size:11px;letter-spacing:3px;color:#c8dcd2">THE WEEKLY EDIT · {{ date }}</p>
+<h1 style="margin:0;font-family:Georgia,serif;font-size:34px;font-weight:normal;line-height:1.15">A little less inbox.<br>A little more perspective.</h1>
+<p style="margin:18px 0 0;color:#d4e3db;font-size:14px;line-height:1.6">{{ count }} messages, thoughtfully gathered. Browse what interests you; leave the rest.</p>
+</td></tr><tr><td style="height:20px"></td></tr>
+{% for card in cards %}
+<tr><td style="background:#fff;border-radius:12px;padding:24px;border:1px solid #e2e5df">
+<table role="presentation" width="100%"><tr><td width="76" valign="top"><img src="{{ card.thumbnail }}" width="64" height="64" alt="Topic {{ loop.index }}" style="display:block;border-radius:12px"></td>
+<td valign="top"><p style="margin:0 0 7px;color:#65776d;font-size:10px;letter-spacing:2px">{{ card.sources }} MESSAGE{% if card.sources != 1 %}S{% endif %} · CURATED TOPIC</p>
+<h2 style="font-family:Georgia,serif;font-weight:normal;font-size:23px;line-height:1.25;margin:0 0 14px">{{ card.title }}</h2>
+{% for item in card["items"] %}
+<p style="font-size:14px;line-height:1.7;margin:0 0 10px">{{ item.summary }}</p>
+{% if item.deadline %}<p style="font-size:12px;font-weight:bold;color:{% if item.expired %}#a92932{% else %}#725520{% endif %};margin:8px 0">{% if item.expired %}EXPIRED{% else %}DEADLINE{% endif %} · {{ item.deadline_display }}</p>{% endif %}
+<p style="font-size:11px;color:#66746d;margin:8px 0 15px">{{ item.sender }}<br><a href="{{ item.original_url }}" style="color:#24594c">Open original</a>{% if item.unsubscribe %} &nbsp;·&nbsp; <a href="{{ item.unsubscribe }}" style="color:#596b63">Unsubscribe from this sender</a>{% endif %}</p>
+{% endfor %}</td></tr></table></td></tr><tr><td style="height:14px"></td></tr>
+{% endfor %}
+{% if suspicious %}<tr><td style="padding:24px;background:#fff8ed;border:1px solid #e8d8ba;border-radius:12px">
+<h2 style="font-family:Georgia,serif;font-size:23px;font-weight:normal;margin:0 0 12px">Set aside for your review</h2>
+<p style="font-size:13px;line-height:1.6">Sender or link verification needs attention. These messages remain in your inbox. No images or active links are included here.</p>
+{% for item in suspicious %}<div style="border-top:1px solid #e8d8ba;padding-top:14px;margin-top:14px;font-size:12px;line-height:1.7;overflow-wrap:anywhere"><strong>{{ item.title }}</strong><br>{{ item.summary }}<br>Sender: {{ item.sender }}<br>Received: {{ item.received }}<br>Reason: {{ item.reason }}<br>Original Gmail message ID: {{ item.id }}</div>{% endfor %}
+</td></tr>{% endif %}
+<tr><td style="padding:24px 12px;text-align:center;font-size:11px;line-height:1.7;color:#68766e">A quieter inbox, on your terms.<br>Nothing deleted. Originals remain in your mailbox.<br>Dates reflect the original offers; expired offers are explicitly marked.</td></tr>
+</table></td></tr></table></body></html>
