@@ -10,32 +10,68 @@ from .core import normalize, security, safe_text
 from .io import Error, private_write, run
 
 
-def tile(index):
-    # Tiny geometric topic thumbnail. Generated locally, no remote assets/tracking.
-    palette = [(32, 34, 31), (54, 61, 44), (73, 76, 63), (42, 51, 47)]
-    bg = palette[index % len(palette)]
+def tile(index, title=""):
+    """Local editorial illustrations, not product photos or remote email assets."""
+    title = title.casefold()
+    kind = ("outdoors" if any(w in title for w in ("outdoor", "hiking", "travel", "weekend"))
+            else "books" if any(w in title for w in ("book", "reading", "essay", "fiction"))
+            else "games" if any(w in title for w in ("game", "table", "play"))
+            else "abstract")
+    palettes = [(226, 232, 211), (227, 221, 238), (241, 218, 195)]
+    bg = palettes[index % len(palettes)]
+    ink, accent, paper = (39, 57, 49), (227, 141, 101), (251, 248, 235)
+    width, height = 480, 260
 
     def chunk(t, data):
-        return (
-            struct.pack("!I", len(data))
-            + t
-            + data
-            + struct.pack("!I", zlib.crc32(t + data) & 0xFFFFFFFF)
-        )
+        return (struct.pack("!I", len(data)) + t + data
+                + struct.pack("!I", zlib.crc32(t + data) & 0xFFFFFFFF))
 
     rows = []
-    for y in range(64):
+    for y in range(height):
         row = bytearray()
-        for x in range(64):
-            stripe = 18 <= x < 46 and (18 <= y < 22 or 29 <= y < 33 or 40 <= y < 44)
-            row.extend((216, 235, 164) if stripe else bg)
+        for x in range(width):
+            c = bg
+            if kind == "outdoors":
+                if (x-355)**2 + (y-67)**2 < 33**2:
+                    c = accent
+                if y > 218 - max(0, 140-abs(x-190)):
+                    c = (117, 139, 109)
+                if y > 255 - max(0, 145-abs(x-310)):
+                    c = ink
+                if y > 232:
+                    c = (188, 203, 163)
+            elif kind == "books":
+                if 95 < x < 374 and 183 < y < 207:
+                    c = ink
+                if 114 < x < 357 and 148 < y < 177:
+                    c = accent
+                if 136 < x < 342 and 109 < y < 140:
+                    c = paper
+                if 155 < x < 329 and 69 < y < 101:
+                    c = ink
+                if 152 < x < 337 and 119 < y < 123:
+                    c = (197, 190, 169)
+            elif kind == "games":
+                if 118 < x < 292 and 63 < y < 221:
+                    c = ink if ((x-118)//39+(y-63)//39)%2 else paper
+                if 310 < x < 373 and 82 < y < 145:
+                    c = accent
+                if any((x-px)**2+(y-py)**2 < 5**2 for px,py in [(325,97),(358,130),(341,113)]):
+                    c = ink
+                if (x-345)**2+(y-190)**2 < 23**2:
+                    c = ink
+            else:
+                if (x-190)**2+(y-130)**2 < 80**2:
+                    c = ink
+                if 237 < x < 340 and 66 < y < 197:
+                    c = accent
+                if (x-284)**2+(y-130)**2 < 30**2:
+                    c = paper
+            row.extend(c)
         rows.append(b"\0" + row)
-    return (
-        b"\x89PNG\r\n\x1a\n"
-        + chunk(b"IHDR", struct.pack("!2I5B", 64, 64, 8, 2, 0, 0, 0))
-        + chunk(b"IDAT", zlib.compress(b"".join(rows)))
-        + chunk(b"IEND", b"")
-    )
+    return (b"\x89PNG\r\n\x1a\n"
+            + chunk(b"IHDR", struct.pack("!2I5B", width, height, 8, 2, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(b"".join(rows))) + chunk(b"IEND", b""))
 
 
 def render(c, items, groups, flagged, now=None, inline=False):
@@ -89,7 +125,7 @@ def render(c, items, groups, flagged, now=None, inline=False):
             if unsub:
                 text += ["Unsubscribe: " + unsub]
             text += [""]
-        data = tile(n)
+        data = tile(n, title)
         cid = f"topic-{n}@pubmail"
         images[cid] = data
         thumbnail = (

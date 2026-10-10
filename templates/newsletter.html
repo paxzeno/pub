@@ -14,16 +14,18 @@
       .panel { padding:24px 18px !important; }
       .hero-title { font-size:28px !important; line-height:1.2 !important; }
       .topic-title { font-size:24px !important; }
+      .art-cell, .heading-cell { display:block !important; width:100% !important; box-sizing:border-box !important; direction:ltr !important; }
+      .heading-cell { padding:22px 0 0 !important; }
       .action { display:block !important; text-align:center !important; margin-right:0 !important; }
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background:#eeede9;color:#20221f;font-family:Arial,Helvetica,sans-serif">
+<body style="margin:0;padding:0;background:#fff;color:#20221f;font-family:Arial,Helvetica,sans-serif">
 <div style="display:none;max-height:0;overflow:hidden;mso-hide:all">Your promotions, gathered into a quieter weekly read.</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed">
 <tr><td class="outer" align="center" style="padding:32px 16px">
 <table role="presentation" width="680" cellpadding="0" cellspacing="0" style="width:100%;max-width:680px;table-layout:fixed">
-<tr><td class="panel" style="background:#20221f;border-radius:18px;padding:36px 32px;color:#fff;border-top:6px solid #d8eba4">
+<tr><td class="panel" style="background:#20221f;padding:36px 32px;color:#fff">
   <p style="margin:0 0 8px;font-size:13px;line-height:1.5;letter-spacing:2px;color:#d8eba4">THE WEEKLY EDIT</p>
   <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#c9cbc4">{{ date }}</p>
   <h1 class="hero-title" style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:36px;font-weight:bold;letter-spacing:-1px;line-height:1.2;overflow-wrap:break-word">Your week.<br>A little less inbox.</h1>
@@ -31,13 +33,19 @@
 </td></tr>
 <tr><td height="20" style="font-size:0;line-height:0">&nbsp;</td></tr>
 {% for card in cards %}
-<tr><td class="panel" style="background:{% if loop.first %}#f8faef{% else %}#fff{% endif %};border-radius:16px;padding:28px 32px;border:1px solid #e4e4de;border-top:4px solid #20221f;overflow-wrap:anywhere;word-wrap:break-word">
-  <!-- Thumbnail accompanies the heading only: summaries get the full card width. -->
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;margin-bottom:16px">
-    <tr><td width="60" valign="middle"><img src="{{ card.thumbnail }}" width="44" height="44" alt="" style="display:block;border:0;border-radius:50%"></td>
-    <td valign="middle" style="font-size:13px;line-height:1.5;color:#62665d;letter-spacing:1px"><strong style="color:#20221f">{% if loop.first %}THE OPENING EDIT{% else %}EDIT / {{ "%02d"|format(loop.index) }}{% endif %}</strong><br>{{ card.sources }} message{% if card.sources != 1 %}s{% endif %}</td></tr>
-  </table>
-  <h2 class="topic-title" style="font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:28px;letter-spacing:-0.6px;line-height:1.25;margin:0 0 20px;overflow-wrap:anywhere">{{ card.title }}</h2>
+<tr><td class="panel" style="background:#fff;padding:28px 32px;border-bottom:1px solid #d9ddd3;overflow-wrap:anywhere;word-wrap:break-word">
+  {% if loop.first %}
+  <img src="{{ card.thumbnail }}" width="616" alt="" style="display:block;width:100%;height:auto;border:0;margin:0 0 24px">
+  <p style="font-size:13px;line-height:1.5;letter-spacing:2px;color:#62665d;margin:0 0 12px">THE OPENING EDIT / {{ card.sources }} MESSAGES</p>
+  <h2 class="topic-title" style="font-size:28px;line-height:1.25;margin:0 0 24px;letter-spacing:-0.6px">{{ card.title }}</h2>
+  {% else %}
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" dir="{% if loop.index is even %}rtl{% else %}ltr{% endif %}" style="table-layout:fixed;margin-bottom:24px">
+  <tr><td class="art-cell" width="45%" valign="middle" dir="ltr"><img src="{{ card.thumbnail }}" width="260" alt="" style="display:block;width:100%;height:auto;border:0"></td>
+  <td class="heading-cell" width="55%" valign="middle" dir="ltr" style="padding:0 24px;text-align:left">
+  <p style="font-size:13px;line-height:1.5;letter-spacing:2px;color:#62665d;margin:0 0 12px">EDIT {{ "%02d"|format(loop.index) }} / {{ card.sources }} MESSAGE{% if card.sources != 1 %}S{% endif %}</p>
+  <h2 class="topic-title" style="font-size:28px;line-height:1.25;margin:0;letter-spacing:-0.6px">{{ card.title }}</h2>
+  </td></tr></table>
+  {% endif %}
   {% for item in card["items"] %}
   <div{% if not loop.first %} style="border-top:1px solid #e7e8e2;padding-top:24px;margin-top:24px"{% endif %}>
     <p style="font-size:14px;line-height:1.6;color:#62665d;margin:0 0 10px;overflow-wrap:anywhere;word-break:break-word">From {{ item.sender }}</p>

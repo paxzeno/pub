@@ -14,16 +14,18 @@
       .panel { padding:24px 18px !important; }
       .hero-title { font-size:28px !important; line-height:1.2 !important; }
       .topic-title { font-size:24px !important; }
+      .art-cell, .heading-cell { display:block !important; width:100% !important; box-sizing:border-box !important; direction:ltr !important; }
+      .heading-cell { padding:22px 0 0 !important; }
       .action { display:block !important; text-align:center !important; margin-right:0 !important; }
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background:#eeede9;color:#20221f;font-family:Arial,Helvetica,sans-serif">
+<body style="margin:0;padding:0;background:#fff;color:#20221f;font-family:Arial,Helvetica,sans-serif">
 <div style="display:none;max-height:0;overflow:hidden;mso-hide:all">Your promotions, gathered into a quieter weekly read.</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed">
 <tr><td class="outer" align="center" style="padding:32px 16px">
 <table role="presentation" width="680" cellpadding="0" cellspacing="0" style="width:100%;max-width:680px;table-layout:fixed">
-<tr><td class="panel" style="background:#20221f;border-radius:18px;padding:36px 32px;color:#fff;border-top:6px solid #d8eba4">
+<tr><td class="panel" style="background:#20221f;padding:36px 32px;color:#fff">
   <p style="margin:0 0 8px;font-size:13px;line-height:1.5;letter-spacing:2px;color:#d8eba4">THE WEEKLY EDIT</p>
   <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#c9cbc4">10 October 2026</p>
   <h1 class="hero-title" style="margin:0;font-family:Arial,Helvetica,sans-serif;font-size:36px;font-weight:bold;letter-spacing:-1px;line-height:1.2;overflow-wrap:break-word">Your week.<br>A little less inbox.</h1>
@@ -31,13 +33,12 @@
 </td></tr>
 <tr><td height="20" style="font-size:0;line-height:0">&nbsp;</td></tr>
 
-<tr><td class="panel" style="background:#f8faef;border-radius:16px;padding:28px 32px;border:1px solid #e4e4de;border-top:4px solid #20221f;overflow-wrap:anywhere;word-wrap:break-word">
-  <!-- Thumbnail accompanies the heading only: summaries get the full card width. -->
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;margin-bottom:16px">
-    <tr><td width="60" valign="middle"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAe0lEQVR4nO3VQQ2AMAAEQZxA0I4oPGACESXZNkyyAm5etx3nvnRbvgCgXgBQLwCoFwDUCwDqBQD1AoB6AUC9oAHcz/V5AAArAeYJoA6gDqDurz8AADAImCeAOoA6gLq//gAAwCBgngDqAOoA6gDqAOoA6gDqAOoA6pYHvIC/uFmAW9kAAAAAAElFTkSuQmCC" width="44" height="44" alt="" style="display:block;border:0;border-radius:50%"></td>
-    <td valign="middle" style="font-size:13px;line-height:1.5;color:#62665d;letter-spacing:1px"><strong style="color:#20221f">THE OPENING EDIT</strong><br>2 messages</td></tr>
-  </table>
-  <h2 class="topic-title" style="font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:28px;letter-spacing:-0.6px;line-height:1.25;margin:0 0 20px;overflow-wrap:anywhere">A weekend outdoors</h2>
+<tr><td class="panel" style="background:#fff;padding:28px 32px;border-bottom:1px solid #d9ddd3;overflow-wrap:anywhere;word-wrap:break-word">
+
+  <img src="data:image/png;base64,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" width="616" alt="" style="display:block;width:100%;height:auto;border:0;margin:0 0 24px">
+  <p style="font-size:13px;line-height:1.5;letter-spacing:2px;color:#62665d;margin:0 0 12px">THE OPENING EDIT / 2 MESSAGES</p>
+  <h2 class="topic-title" style="font-size:28px;line-height:1.25;margin:0 0 24px;letter-spacing:-0.6px">A weekend outdoors</h2>
+
 
   <div>
     <p style="font-size:14px;line-height:1.6;color:#62665d;margin:0 0 10px;overflow-wrap:anywhere;word-break:break-word">From offers@outdoors.example</p>
@@ -66,13 +67,15 @@
 </td></tr>
 <tr><td height="18" style="font-size:0;line-height:0">&nbsp;</td></tr>
 
-<tr><td class="panel" style="background:#fff;border-radius:16px;padding:28px 32px;border:1px solid #e4e4de;border-top:4px solid #20221f;overflow-wrap:anywhere;word-wrap:break-word">
-  <!-- Thumbnail accompanies the heading only: summaries get the full card width. -->
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;margin-bottom:16px">
-    <tr><td width="60" valign="middle"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAfUlEQVR4nO3VQQ2AMAAEQQTx5odbROEBE4goybZhkhVw87rtOPel2/IFAPUCgHoBQL0AoF4AUC8AqBcA1AsA6gUN4H6uzwMAWAkwTwB1AHUAdX/9AQCAQcA8AdQB1AHU/fUHAAAGAfMEUAdQB1AHUAdQB1AHUAdQB1C3POAFg4ZHNaEn6LQAAAAASUVORK5CYII=" width="44" height="44" alt="" style="display:block;border:0;border-radius:50%"></td>
-    <td valign="middle" style="font-size:13px;line-height:1.5;color:#62665d;letter-spacing:1px"><strong style="color:#20221f">EDIT / 02</strong><br>1 message</td></tr>
-  </table>
-  <h2 class="topic-title" style="font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:28px;letter-spacing:-0.6px;line-height:1.25;margin:0 0 20px;overflow-wrap:anywhere">A new world for your game table</h2>
+<tr><td class="panel" style="background:#fff;padding:28px 32px;border-bottom:1px solid #d9ddd3;overflow-wrap:anywhere;word-wrap:break-word">
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" dir="rtl" style="table-layout:fixed;margin-bottom:24px">
+  <tr><td class="art-cell" width="45%" valign="middle" dir="ltr"><img src="data:image/png;base64,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" width="260" alt="" style="display:block;width:100%;height:auto;border:0"></td>
+  <td class="heading-cell" width="55%" valign="middle" dir="ltr" style="padding:0 24px;text-align:left">
+  <p style="font-size:13px;line-height:1.5;letter-spacing:2px;color:#62665d;margin:0 0 12px">EDIT 02 / 1 MESSAGE</p>
+  <h2 class="topic-title" style="font-size:28px;line-height:1.25;margin:0;letter-spacing:-0.6px">A new world for your game table</h2>
+  </td></tr></table>
+
 
   <div>
     <p style="font-size:14px;line-height:1.6;color:#62665d;margin:0 0 10px;overflow-wrap:anywhere;word-break:break-word">From news@games.example</p>
@@ -87,13 +90,15 @@
 </td></tr>
 <tr><td height="18" style="font-size:0;line-height:0">&nbsp;</td></tr>
 
-<tr><td class="panel" style="background:#fff;border-radius:16px;padding:28px 32px;border:1px solid #e4e4de;border-top:4px solid #20221f;overflow-wrap:anywhere;word-wrap:break-word">
-  <!-- Thumbnail accompanies the heading only: summaries get the full card width. -->
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="table-layout:fixed;margin-bottom:16px">
-    <tr><td width="60" valign="middle"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAfUlEQVR4nO3VwQmAMAAEQTvzLVimRdmDTVhEhE1wYAu4ed12nPvSbfkCgHoBQL0AoF4AUC8AqBcA1AsA6gUA9YIGcD/X5wEArASYJ4A6gDqAur/+AADAIGCeAOoA6gDq/voDAACDgHkCqAOoA6gDqAOoA6gDqAOoA6hbHvACKYpR0gh1oR4AAAAASUVORK5CYII=" width="44" height="44" alt="" style="display:block;border:0;border-radius:50%"></td>
-    <td valign="middle" style="font-size:13px;line-height:1.5;color:#62665d;letter-spacing:1px"><strong style="color:#20221f">EDIT / 03</strong><br>1 message</td></tr>
-  </table>
-  <h2 class="topic-title" style="font-family:Arial,Helvetica,sans-serif;font-weight:bold;font-size:28px;letter-spacing:-0.6px;line-height:1.25;margin:0 0 20px;overflow-wrap:anywhere">The autumn reading collection</h2>
+<tr><td class="panel" style="background:#fff;padding:28px 32px;border-bottom:1px solid #d9ddd3;overflow-wrap:anywhere;word-wrap:break-word">
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" dir="ltr" style="table-layout:fixed;margin-bottom:24px">
+  <tr><td class="art-cell" width="45%" valign="middle" dir="ltr"><img src="data:image/png;base64,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" width="260" alt="" style="display:block;width:100%;height:auto;border:0"></td>
+  <td class="heading-cell" width="55%" valign="middle" dir="ltr" style="padding:0 24px;text-align:left">
+  <p style="font-size:13px;line-height:1.5;letter-spacing:2px;color:#62665d;margin:0 0 12px">EDIT 03 / 1 MESSAGE</p>
+  <h2 class="topic-title" style="font-size:28px;line-height:1.25;margin:0;letter-spacing:-0.6px">The autumn reading collection</h2>
+  </td></tr></table>
+
 
   <div>
     <p style="font-size:14px;line-height:1.6;color:#62665d;margin:0 0 10px;overflow-wrap:anywhere;word-break:break-word">From books@reading.example</p>

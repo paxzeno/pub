@@ -11,14 +11,18 @@ Fictional previews can be generated with `python examples/preview.py` after inst
 Generated private mail, previews and MIME must never be committed.
 
 Readability: full-width 17 px summaries, 14 px source/deadline details, and at least
-44 px action targets. Thumbnail and topic count sit above the text, never beside
-the whole summary. At 520 px and below, gutters shrink and action links stack.
-Inline defaults remain readable when a client strips media queries. Desktop width
-is capped at 680 px to keep line lengths comfortable.
+44 px action targets. Desktop width is capped at 680 px. At 520 px and below,
+illustrations and headings stack and actions become full-width.
 
-Visual direction: an editorial charcoal masthead, restrained lime accents, numbered
-topic headers, bold sans-serif titles and pill-shaped primary actions. The review
-section uses its own amber treatment; expired deadlines retain explicit red labels.
-All essential styling stays inline; no web fonts, external images or CSS dependencies.
-The opening topic has a light accent panel, followed by quieter white supporting
-items. This is visual hierarchy, not an inferred importance ranking.
+Composition: a full-width opening illustration, then alternating illustration/heading
+rows with summaries below. Open white sections and fine rules replace repeated cards.
+The review desk remains visually distinct, text-only, and without active links.
+
+Illustrations are deterministic local PNGs: simple outdoors, reading and gaming motifs
+selected from topic-title keywords, with an abstract fallback. They are decorative,
+not depictions of actual products or evidence about an offer. No remote image fetches,
+tracking, generation API, or extra runtime dependency is involved. PNGs are embedded
+as CID attachments in email and data URLs in local browser previews.
+
+Both template copies must stay identical. Browser verification does not establish
+compatibility in every email client; test delivery separately before enabling schedules.
