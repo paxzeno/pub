@@ -28,7 +28,7 @@ for id, title, summary, deadline, sender in [
     (
         "demo3",
         "A new world for your game table",
-        "The publisher previews a cooperative exploration game, with details on player count and the upcoming campaign.",
+        "• Cooperative exploration — The publisher previews a new game.\n• Campaign details — Player count and the upcoming campaign are covered.",
         None,
         "news@games.example",
     ),

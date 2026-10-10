@@ -231,3 +231,10 @@ Exact-sender security exceptions may omit `omit_http_domains` (exact hosts) and
 use `operator_verified_original: true` with `original_domain` and a human reason
 only after explicit original-sender confirmation; relay authentication still applies.
 This is operator-vouched attribution, not cryptographic proof or blanket relay trust.
+
+## Lists and offer timing
+Bullet summaries render as separate HTML rows with bold item headings (not CSS-only
+whitespace); plain text retains each original bullet. Offer date ranges with an
+explicit year may combine with a matching end-date/time clause in the same source.
+Retain both evidence excerpts, never infer a missing year or timezone. Date-only
+cutoffs display without an invented time. Expired offers remain explicitly red.

@@ -134,6 +134,9 @@ class Model:
             except (ValueError, TypeError):
                 d["deadline"] = None
                 d["deadline_evidence"] = None
+        if not d.get("deadline"):
+            from .timing import extract_offer_timing
+            d.update(extract_offer_timing(m["body"]))
         if profile.get("format") == "title_list":
             titles = [t for t in m.get("image_alts", []) if t.casefold() not in
                       {x.casefold() for x in profile.get("exclude_image_alts", [])}]

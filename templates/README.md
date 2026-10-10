@@ -32,3 +32,7 @@ source emails; real source HTML and screenshots must remain private.
 
 Both template copies must stay identical. Browser verification does not establish
 compatibility in every email client; test delivery separately before enabling schedules.
+
+Bullet summaries use a hanging bullet column and bold title, with the description
+on its own line. Inline table structure preserves separation in mail clients that
+strip whitespace CSS. Date-only deadlines explicitly state that no time was supplied.

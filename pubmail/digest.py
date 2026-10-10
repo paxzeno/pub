@@ -1,6 +1,6 @@
 from __future__ import annotations
 import base64, hashlib, json, uuid
-from datetime import datetime
+from datetime import datetime, date
 from email.message import EmailMessage
 from email.policy import SMTP
 from email.utils import formatdate
@@ -8,6 +8,21 @@ from zoneinfo import ZoneInfo
 from jinja2 import Environment, PackageLoader, select_autoescape
 from .core import normalize, security, safe_text
 from .io import Error, private_write, run
+
+
+def summary_blocks(summary):
+    """Email-safe list structure; no dependence on CSS whitespace preservation."""
+    import re
+    lines = [s.strip() for s in summary.splitlines() if s.strip()]
+    blocks = []
+    for line in lines:
+        match = re.match(r"^(?:[•*-]|\d+[.)])\s+(.+)$", line)
+        if match:
+            title, sep, detail = match[1].partition(" — ")
+            blocks.append({"bullet": True, "title": title if sep else "", "text": detail if sep else title})
+        else:
+            blocks.append({"bullet": False, "title": "", "text": line})
+    return blocks
 
 
 def render(c, items, groups, flagged, now=None, inline=False):
@@ -32,6 +47,11 @@ def render(c, items, groups, flagged, now=None, inline=False):
                 display = dt.astimezone(ZoneInfo(c["timezone"])).strftime(
                     "%d %b %Y, %H:%M %Z"
                 )
+            if not deadline and i.get("deadline_date"):
+                day = date.fromisoformat(i["deadline_date"])
+                expired = day < now.astimezone(ZoneInfo(c["timezone"])).date()
+                display = day.strftime("%d %b %Y") + " (time not supplied)"
+                deadline = i["deadline_date"]
             unsub = next(
                 (u for u in m.get("unsubscribe", []) if u in i.get("safe_urls", [])),
                 None,
@@ -46,6 +66,7 @@ def render(c, items, groups, flagged, now=None, inline=False):
             entries.append(
                 dict(
                     summary=i["summary"],
+                    summary_blocks=summary_blocks(i["summary"]),
                     deadline=deadline,
                     expired=expired,
                     deadline_display=display,
@@ -201,6 +222,7 @@ def prepare(gmail, c, model, store):
                         "topic",
                         "deadline",
                         "deadline_evidence",
+                        "deadline_date",
                     )
                 }
             )
