@@ -390,7 +390,8 @@ def preview_plan(c, model, store, plan_id):
     if not row:
         raise Error("Unknown plan")
     p = json.loads(row[0])
-    items = [dict(d) for d in p["decisions"] if d["action"] == "archive"]
+    candidates = [dict(d) for d in p['decisions'] if d['action'] in ('archive','review')]
+    items = [d for d in candidates if security(d['message'],c)[0] == 'verified']
     from .vision import enrich
     pending = []
     for item in items:
@@ -408,7 +409,10 @@ def preview_plan(c, model, store, plan_id):
         if sec != 'verified':
             raise Error('Preview source security changed; generate a fresh plan')
         item.update(security=sec, security_reason=reason, safe_urls=urls)
-    flagged = [d for d in p["decisions"] if d["action"] == "review"]
+    flagged = [d for d in candidates if security(d['message'],c)[0] != 'verified']
+    for item in flagged:
+        sec, reason, urls = security(item['message'],c)
+        item.update(security=sec, security_reason=reason, safe_urls=urls)
     groups = [[i["id"]] for i in items]
     h, t, _ = render(c, items, groups, flagged, inline=True)
     prefix = store.root / "plans" / (plan_id + "-newsletter")

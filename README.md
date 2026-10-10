@@ -418,3 +418,18 @@ private JSON retains source evidence for inspection, but creates no delivery or 
 
 Single-day events with an explicit source year also receive event badges. Keep
 raw ambiguous event dates and urgency visible without guessing a cutoff/year.
+
+### Contact and bare-website links
+After sender/relay authentication, omit `mailto:` contact actions instead of treating
+these as unsupported web destinations. Never render them as newsletter links or
+unsubscribe controls. Bare ASCII website addresses with no scheme may be omitted
+only if their registrable domain matches the authenticated original sender domain;
+never add a scheme, fetch, follow or turn them into clickable URLs. Credentials,
+ports, backslashes, lookalikes and unrelated bare hosts do not inherit this rule.
+Other malformed/non-HTTPS links remain subject to review; diagnostics identify the
+scheme/host without recipient-specific paths or tokens. These are link omissions,
+not sender trust exceptions or advertising-classification approvals.
+
+Plan previews recheck link security against current rules for both normal and
+review candidates. Passing candidates can receive rich presentation; this does
+not edit the stored plan, approve archiving or set newsletter-delivered labels.

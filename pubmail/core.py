@@ -242,12 +242,20 @@ def security(m, c):
                 port = parsed.port
             except ValueError:
                 return "uncertain", "Malformed URL", []
-            # Scoped omissions: never returned as renderable/unsubscribe URLs.
-            if ex and parsed.scheme == "mailto" and ex.get("omit_mailto"):
+            # Contact actions are not web destinations. Never render or activate them.
+            if parsed.scheme.lower() == "mailto":
                 continue
+            # Omit a bare ASCII website only when it belongs to the authenticated
+            # original domain. Never repair it into a clickable link.
+            if not parsed.scheme and not parsed.netloc and re.fullmatch(
+                r"[A-Za-z0-9.-]+(?:/[^\s\\]*)?", url
+            ):
+                bare = host("https://" + url)
+                if bare and (bare == od or bare.endswith("." + od) or registered(bare) == registered(od)):
+                    continue
             if ex and parsed.scheme == "http" and parsed.hostname in ex.get("omit_http_domains", []) and not parsed.username and not parsed.password and port in (None, 80):
                 continue
-            return "uncertain", "Link is non-HTTPS, malformed, or uses an unsupported scheme; not a sender-authentication failure", []
+            return "uncertain", f"Link format requires review: scheme={parsed.scheme or 'missing'}, host={parsed.hostname or 'unresolved'}; not a sender-authentication failure", []
         if registered(h) != registered(od) and h not in allowed:
             return (
                 "uncertain",

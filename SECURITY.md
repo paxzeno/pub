@@ -51,3 +51,14 @@ completion can resume without another send. Filesystem loss can destroy this pro
 back up state and never erase it casually.
 
 Unsubscribe links can contain recipient-specific identifiers: keep rendered previews private.
+
+### Contact and bare-website links
+After sender/relay authentication, omit `mailto:` contact actions instead of treating
+these as unsupported web destinations. Never render them as newsletter links or
+unsubscribe controls. Bare ASCII website addresses with no scheme may be omitted
+only if their registrable domain matches the authenticated original sender domain;
+never add a scheme, fetch, follow or turn them into clickable URLs. Credentials,
+ports, backslashes, lookalikes and unrelated bare hosts do not inherit this rule.
+Other malformed/non-HTTPS links remain subject to review; diagnostics identify the
+scheme/host without recipient-specific paths or tokens. These are link omissions,
+not sender trust exceptions or advertising-classification approvals.
