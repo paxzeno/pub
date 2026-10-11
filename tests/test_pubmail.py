@@ -431,6 +431,22 @@ class Case(unittest.TestCase):
         self.assertIn("L2", self.g.messages["a1"]["labelIds"])
         self.assertNotIn("UNREAD", self.g.messages["a1"]["labelIds"])
 
+    def test_digest_cutover_excludes_old_ads_and_review_without_mutation(self):
+        self.c['rollout']['live_after'] = 1782730801
+        self.g.messages['a1']['labelIds'] = ['L1', 'UNREAD']
+        self.store.db.execute("INSERT INTO meta VALUES(?,?)", ('review:a1', '{}'))
+        self.store.db.commit()
+        self.assertIsNone(digest.prepare(self.g, self.c, self.model, self.store))
+        self.model.classify.assert_not_called()
+        self.assertEqual(self.g.calls, [])
+        self.assertIsNotNone(self.store.db.execute("SELECT value FROM meta WHERE key='review:a1'").fetchone())
+
+    def test_digest_cutover_includes_exact_boundary(self):
+        self.c['rollout']['live_after'] = 1782730800
+        self.g.messages['a1']['labelIds'] = ['L1', 'UNREAD']
+        self.model.classify.return_value = dict(title='Collection', summary='Summer collection.', topic='Summer', deadline=None)
+        self.assertEqual(digest.prepare(self.g, self.c, self.model, self.store)['ids'], ['a1'])
+
 
 if __name__ == "__main__":
     unittest.main()

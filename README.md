@@ -552,3 +552,5 @@ honours `rollout.digest_enabled`; it does not send every five minutes. Inspect
 Finally choose `rollout.live_after`, then enable the rollout flags. Installation,
 configuring review, and running the fictional test do not activate mailbox work.
 Keep historical pending cases separate from the live cutover.
+Routine digest preparation also respects `live_after`; older ads-labelled mail and
+review records remain untouched for explicit historical plan previews.

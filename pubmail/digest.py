@@ -227,6 +227,7 @@ def mime(c, items, groups, flagged, id):
 
 
 def prepare(gmail, c, model, store):
+    live_after = int(c.get("rollout", {}).get("live_after") or 0)
     labels = gmail.labels()
     ads = labels.get(c["labels"]["ads"])
     done = labels.get(c["labels"]["newsletter"])
@@ -234,7 +235,8 @@ def prepare(gmail, c, model, store):
     flagged = []
     if ads:
         rows, more = gmail.search(
-            f"label:{c['labels']['ads']} -label:{c['labels']['newsletter']} -in:spam -in:trash",
+            f"label:{c['labels']['ads']} -label:{c['labels']['newsletter']} -in:spam -in:trash"
+            + (f" after:{live_after - 1}" if live_after else ""),
             c["limits"]["digest_messages"],
         )
         if more:
@@ -262,6 +264,9 @@ def prepare(gmail, c, model, store):
         if row["id"] in delivered:
             continue
         m = normalize(gmail.raw(row["id"]), c["limits"]["body_characters"])
+        # Historical ads/review records remain untouched for explicit catch-up.
+        if live_after and m["timestamp"] < live_after:
+            continue
         if done and done in m["labels"] or {"SPAM", "TRASH"} & set(m["labels"]):
             continue
         sec, reason, urls = security(m, c)

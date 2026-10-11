@@ -29,6 +29,8 @@ Read README.md, SECURITY.md and this file before operating this repository.
 - Historical runs create local previews, not unsolicited catch-up emails.
 - Do not enable either live schedule until rollout has been reviewed and activated.
 - Set live_after to the agreed cutover epoch; do not silently process old backlog hourly.
+- Routine digest preparation also excludes sources before live_after, including old
+  ads-labelled mail and review records. Preserve those for explicit historical plan previews.
 
 ## Digest
 - Eligibility: adds without adds/newsletter, regardless of whether subsequently read.
