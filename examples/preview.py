@@ -101,7 +101,7 @@ def publish(out):
                 assert page.evaluate('document.documentElement.scrollWidth <= innerWidth'), name
                 assert page.locator('img').count() == 4
                 assert page.locator('img').evaluate_all('(imgs) => imgs.every(i => i.complete && i.naturalWidth > 0)')
-                page.screenshot(path=str(docs / f'sample-{name}.png'), full_page=True, animations='disabled')
+                page.screenshot(path=str(docs / f'sample-{name}-{NOW:%Y-%m-%d}.png'), full_page=True, animations='disabled')
                 context.close()
         finally:
             browser.close()

@@ -188,8 +188,9 @@ Tests use fictional fixtures and mock transports; they never access live mail.
 
 ## Fictional visual preview
 
-[Sample HTML](docs/sample.html) · [Plain text](docs/sample.txt) · [Desktop](docs/sample-desktop.png) · [Phone](docs/sample-mobile.png).
+[Sample HTML](docs/sample.html) · [Plain text](docs/sample.txt) · [Desktop](docs/sample-desktop-2026-10-11.png) · [Phone](docs/sample-mobile-2026-10-11.png).
 
+Screenshots use dated filenames so refreshed versions do not reuse an old image URL.
 Refreshed 11 October 2026 using the production renderer: six fictional emails,
 four sender thumbnails, and two distinct summaries sharing one sender section.
 The sample shows source dates below From, inline title bullets, renewal/eligibility
