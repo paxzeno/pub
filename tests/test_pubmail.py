@@ -429,7 +429,30 @@ class Case(unittest.TestCase):
             digest.send(self.g, self.c, self.store, p["id"])
             self.assertEqual(run.call_count, 1)
         self.assertIn("L2", self.g.messages["a1"]["labelIds"])
+        self.assertNotIn("L1", self.g.messages["a1"]["labelIds"])
         self.assertNotIn("UNREAD", self.g.messages["a1"]["labelIds"])
+
+    def test_partial_delivered_label_transition_recovers_without_resend(self):
+        self.g = FakeGmail([raw('a1', labels=['L1', 'UNREAD', 'IMPORTANT']),
+                            raw('a2', labels=['L1', 'INBOX', 'STARRED'])])
+        p = {'ids': ['a1', 'a2']}
+        self.store.delivery('accepted', 'sent', p)
+        modify = self.g.modify
+        def fail_second(mid, **kwargs):
+            if mid == 'a2':
+                raise Error('label service unavailable')
+            return modify(mid, **kwargs)
+        with patch.object(self.g, 'modify', side_effect=fail_second):
+            with self.assertRaises(Error):
+                digest.send(self.g, self.c, self.store, 'accepted')
+        self.assertEqual(set(self.g.messages['a1']['labelIds']), {'L2', 'UNREAD', 'IMPORTANT'})
+        self.assertEqual(set(self.g.messages['a2']['labelIds']), {'L1', 'INBOX', 'STARRED'})
+        self.assertEqual(self.store.db.execute("SELECT status FROM deliveries WHERE id='accepted'").fetchone()[0], 'sent')
+        with patch('pubmail.digest.run') as smtp:
+            digest.send(self.g, self.c, self.store, 'accepted')
+            digest.send(self.g, self.c, self.store, 'accepted')
+            smtp.assert_not_called()
+        self.assertEqual(set(self.g.messages['a2']['labelIds']), {'L2', 'INBOX', 'STARRED'})
 
     def test_digest_cutover_excludes_old_ads_and_review_without_mutation(self):
         self.c['rollout']['live_after'] = 1782730801

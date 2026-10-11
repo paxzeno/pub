@@ -51,6 +51,10 @@ Read README.md, SECURITY.md and this file before operating this repository.
   Embed only the resulting PNG, never source HTML. Flagged items remain text-only.
 - Copy only validated original HTTPS unsubscribe URLs; never follow them automatically.
 - Mark adds/newsletter only after confirmed SMTP acceptance. Local preview is not delivery.
+- In that same per-message update, remove adds: pending and delivered are separate
+  pipeline stages. Preserve all other labels, including INBOX and UNREAD. Accepted-send
+  recovery repeats this idempotent label transition without resending. For approved
+  historical previews finalized manually, also remove adds rather than retaining both.
 - Write send intent before SMTP; uncertain delivery blocks all further sends.
 - Reconcile ambiguity with actual Sent/recipient evidence; no blind retry.
 - Newsletter From must be supported by its separately authenticated sending account.

@@ -338,9 +338,14 @@ def prepare(gmail, c, model, store):
 
 
 def finish_labels(gmail, c, store, id, p):
-    done = gmail.labels(create=True)[c["labels"]["newsletter"]]
+    labels = gmail.labels(create=True)
+    done = labels[c["labels"]["newsletter"]]
+    ads = labels[c["labels"]["ads"]]
+    if ads == done:
+        raise Error("Pending and delivered labels must be distinct")
     for mid in p["ids"]:
-        gmail.modify(mid, add=[done])
+        # One idempotent per-message transition; accepted-send recovery reuses it.
+        gmail.modify(mid, add=[done], remove=[ads])
         store.db.execute("DELETE FROM meta WHERE key=?", ("review:" + mid,))
         store.db.commit()
     store.delivery(id, "complete", p)

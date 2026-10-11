@@ -16,7 +16,11 @@ until explicitly enabled. MIT licensed. See [AGENTS.md](AGENTS.md) and [SECURITY
 4. Preview proposed archive actions and review-only candidates in a private report.
 5. Apply only a reviewed, unchanged plan; add `adds`, remove `INBOX`, leave `UNREAD` alone.
 6. Each Friday at 11:00 in Europe/Lisbon, combine undigested mail into topic cards.
-7. Send using a separate authenticated account, then add `adds/newsletter`.
+7. Send using a separate authenticated account, then add `adds/newsletter` and remove `adds` in the same per-message update.
+
+`adds` is the pending newsletter queue; `adds/newsletter` is delivered history.
+Delivery labelling preserves read/unread, inbox/archive and all other labels.
+Interrupted label updates resume without sending the newsletter again.
 
 Messages already in `adds` are digest-eligible even if later read. Suspicious candidates
 remain in the inbox and enter a private review queue when their plan is applied.
