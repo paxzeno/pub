@@ -188,9 +188,31 @@ Tests use fictional fixtures and mock transports; they never access live mail.
 
 ## Fictional visual preview
 
-[Sample HTML](docs/sample.html) · [Desktop](docs/sample-desktop.png) · [Phone](docs/sample-mobile.png).
-These examples are synthetic and contain no real mailbox content. Browser layout is checked;
-rendering can differ in Gmail, Apple Mail and Outlook. Preview a real MIME before broad use.
+[Sample HTML](docs/sample.html) · [Plain text](docs/sample.txt) · [Desktop](docs/sample-desktop.png) · [Phone](docs/sample-mobile.png).
+
+Refreshed 11 October 2026 using the production renderer: six fictional emails,
+four sender thumbnails, and two distinct summaries sharing one sender section.
+The sample shows source dates below From, inline title bullets, renewal/eligibility
+terms, a trimming notice above an expired offer, an upcoming event, original-message
+buttons and per-email unsubscribe controls. An optional text-only review desk is
+included to illustrate unresolved authentication, not ordinary marketing trackers.
+
+All senders, source emails, offers and IDs are invented. The original/unsubscribe
+buttons are illustrative, not links to real mail. Thumbnails are offline screenshots
+of the fictional source HTML; there are no remote artwork requests or mailbox calls.
+Browser layout is checked at 1040px and 390px, including loaded images and horizontal
+overflow; rendering can still differ in Gmail, Apple Mail and Outlook. The Gmail
+original-message button's mobile-app handoff remains a known limitation ([issue #1](https://github.com/paxzeno/pub/issues/1)).
+
+Rebuild from the same fixtures and current template:
+
+```sh
+.venv/bin/python examples/preview.py --publish-docs
+```
+
+Without `--publish-docs`, the script writes only ignored local `output/sample.*`
+files, including MIME for inspection. It never sends mail. Visual snapshots use a
+fixed date for reproducibility; MIME uses its actual generation time.
 
 Rewriting relay exceptions can specify `original_domain`; Gmail-validated ARC must
 confirm that domain. The reverse-alias local-part is never treated as identity proof.

@@ -1,0 +1,59 @@
+Your weekly reading list
+11 October 2026
+
+## hello@trail.example
+
+### Pack lighter. Stay out longer.
+Selected daypacks are 20% off with TRAIL20 on orders of €60 or more. Waterproof jackets are excluded. The offer ends on 12 October 2026; no cutoff time is supplied.
+DEADLINE: 12 Oct 2026 (date-only badge; see source for time)
+From: hello@trail.example
+Date: 2026-10-08 09:14:22
+Original: https://mail.google.com/mail/u/?authuser=reader%40example.com#search/rfc822msgid%3Asample-trail-offer%40example.com
+Unsubscribe: https://trail.example/unsubscribe
+
+### A morning outside, without the overpacking
+• Start small — A short local route can be enough for a reset.
+• Pack the essentials — Water, an extra layer and a charged phone.
+• Leave room — This guide is separate from the daypack promotion above.
+From: hello@trail.example
+Date: 2026-10-09 17:08:16
+Original: https://mail.google.com/mail/u/?authuser=reader%40example.com#search/rfc822msgid%3Asample-trail-guide%40example.com
+Unsubscribe: https://trail.example/unsubscribe
+
+## Three new stories for your weekend
+
+• The Glass Harbour — A coastal mystery; available 10 October.
+• Orbit Nine — A documentary following an observatory crew; available now.
+• The Last Orchard — Title supplied by the artwork. Description not verified from source.
+From: news@screen.example
+Date: 2026-10-09 18:32:05
+Original: https://mail.google.com/mail/u/?authuser=reader%40example.com#search/rfc822msgid%3Asample-screen%40example.com
+Unsubscribe: https://screen.example/unsubscribe
+
+## The introductory reading offer has ended
+
+The introduction was €1.99 per month for three months, then €10.99 per month until cancelled. New members only. The signup offer ended on 9 October 2026. This summary covers only the retained text prefix.
+long email, it was trimmed
+EXPIRED: 09 Oct 2026 (date-only badge; see source for time)
+From: offers@reading.example
+Date: 2026-10-07 12:45:30
+Original: https://mail.google.com/mail/u/?authuser=reader%40example.com#search/rfc822msgid%3Asample-reading%40example.com
+Unsubscribe: https://reading.example/unsubscribe
+
+## Meet the makers this October
+
+A two-day design fair includes hands-on workshops and independent makers. The event runs 17–18 October 2026. Workshop places require separate registration; opening times were not supplied.
+EVENT UPCOMING: 17 Oct 2026 – 18 Oct 2026 (times not supplied)
+From: events@makers.example
+Date: 2026-10-10 10:05:42
+Original: https://mail.google.com/mail/u/?authuser=reader%40example.com#search/rfc822msgid%3Asample-makers%40example.com
+Unsubscribe: https://makers.example/unsubscribe
+
+## SET ASIDE FOR YOUR REVIEW (no active links)
+
+An offer with unverified sender attribution
+This fictional message claims to represent a familiar shop. Its sender could not be verified, so it stays in the inbox without artwork or active links.
+From: offers [at] unverified[.]example
+Date: 2026-10-10 15:20:00
+Reason: Claimed sender identity is not supported by authentication evidence.
+Original Gmail message ID: sample-review
