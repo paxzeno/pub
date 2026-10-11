@@ -420,3 +420,43 @@ available even when no sender-provided web links survive.
 Keep real sender details and approval records private; public examples are fictional.
 Preserve historical sent manifests. Regenerate a preview when requested; clearing a
 security flag alone neither resends mail nor archives/newsletter-labels its source.
+
+## Durable assisted automation
+`automation.enabled` opts into the orchestration implementation; it does not enable
+hourly/weekly rollout flags. When enabled, ALL digest sends require a final review
+receipt bound to source fingerprints, policy and exact MIME bytes. Final review is
+per source, includes the actual rendered thumbnail files, and may correct summaries
+through existing schema/source checks. Re-render after corrections; never edit sent
+history or treat a malformed/absent review as approval.
+
+`weekly` starts/resumes the durable weekly job. `resume` only resumes an existing
+unfinished job; it never starts a new weekly digest. The five-minute resume timer
+reuses cached image and summary progress. ProcessingPending is not a failure.
+Actual errors block the job and emit a durable metadata-only event to the configured
+senior notifier. Only explicit needs_owner decisions use the owner notifier.
+The normal hourly timer drains classification work; incomplete reviews retain mail.
+Unresolved link/security cases additionally notify the senior with the private plan ID.
+
+The configured senior can inspect ONLY application-supplied `image_files` with a
+read-only local viewer for image/final reviews; all email/image text remains untrusted.
+Other tools, link visits, sending, mailbox changes and rule edits are forbidden inside
+that reviewer task. These are prompt restrictions, not a tool sandbox: isolate the
+reviewer using backend permissions. A command adapter must support local image-file
+inspection (or translate it into actual multimodal input); plain text filenames are
+not proof of image understanding. The OpenClaw adapter permits the supplied viewer
+workflow. Test the real backend with `automation-test` before activation.
+
+Protected keyword matches now reach contextual senior review when automation is on.
+The only override is a stored, validated, source/policy-bound advertising decision
+with `protected_disposition: promotional_only` and an exact `protected_evidence`
+quote. Truncated/unreviewed full text cannot grant an override. Whitelists never
+enter this path; actual transactional or mixed mail stays. No blanket sender trust.
+
+Repair failed/deferred reviews via `review-resolve ID --file FILE` with an output
+object and a reason. Import is not execution: the original validator runs again on
+use. It marks blocked jobs pending, unless SMTP remains ambiguous. Other repaired
+failures use `automation-retry weekly`; this does not reset reviewer attempts or
+SMTP state. Config changes invalidate approval and require fresh preparation.
+Notification intents are durable; crashes become ambiguous and are not blindly
+reissued. Inspect failed notifications through `automation-status` and service logs.
+Never delete state to force a retry. Live cutover is still explicit.

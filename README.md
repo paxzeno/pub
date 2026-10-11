@@ -11,7 +11,7 @@ until explicitly enabled. MIT licensed. See [AGENTS.md](AGENTS.md) and [SECURITY
 ## What it does
 
 1. Read unread inbox mail, respecting per-message (not thread) boundaries.
-2. Keep whitelisted, transactional, personal, uncertain or oversized messages.
+2. Keep whitelisted, transactional, personal, uncertain messages. Long summaries use an explicitly disclosed text prefix.
 3. Authenticate sender/relay and compare link domains; evaluate content independently.
 4. Preview proposed archive actions and review-only candidates in a private report.
 5. Apply only a reviewed, unchanged plan; add `adds`, remove `INBOX`, leave `UNREAD` alone.
@@ -505,3 +505,50 @@ available even when no sender-provided web links survive.
 Keep real sender details and approval records private; public examples are fictional.
 Preserve historical sent manifests. Regenerate a preview when requested; clearing a
 security flag alone neither resends mail nor archives/newsletter-labels its source.
+
+## Assisted automation: review, repair and resume
+
+Enable `automation.enabled` after configuring the existing senior connection and
+`senior_notify_argv` / `owner_notify_argv`. Both commands receive a metadata-only
+JSON event on stdin (`event_id`, private `event_file`, `audience`); no shell eval or
+source-mail arguments. A successful exit acknowledges notification. The bundled
+`pubmail.openclaw_notify` enqueues a system event and requests a heartbeat in the
+configured session. Use the actual session key for your installation. This is a
+wake-up, not proof the agent completed the work. Another command adapter can target
+any agent runtime or notification provider.
+
+The scheduler still invokes scripts directly. Empty hourly scans do not wake an
+agent. Weekly preparation checkpoints image/summary progress, resumes unfinished
+passes, then sends each proposed entry and its source evidence/thumbnail files to
+the configured senior. Corrections are validated and rendered before creating a
+MIME-bound review receipt. Sending without that receipt is rejected when automation
+is enabled. Model review remains fallible; these controls do not prove factual truth.
+
+```sh
+pubmail --config /private/config.yaml automation-test  # real reviewer, fictional mail, NO send
+pubmail --config /private/config.yaml digest-review DIGEST_ID  # explicitly review a manual preview
+pubmail --config /private/config.yaml automation-status
+pubmail --config /private/config.yaml review-status
+pubmail --config /private/config.yaml review-resolve TASK_ID --file /private/repair.json
+pubmail --config /private/config.yaml automation-retry weekly
+pubmail --config /private/config.yaml resume
+```
+
+Repair file: `{"output":{...task-specific validated response...},"reason":"source checked"}`.
+The original task is stored privately in SQLite `senior_items`; final reviews use
+the classification response schema, image reviews use text/titles/readable.
+Invalid imports cannot authorize a send. Repairs resume blocked work through the
+five-minute resume timer without replaying uncertain reviewer/SMTP attempts.
+Failures to fetch new/unapproved artwork and unresolved security policies notify
+the senior rather than generating automatic trust rules. Operator/config repairs
+may still be required. Only explicit `needs_owner` responses route to the owner.
+
+Re-run `deploy/install.py` to install the new `pubmail-resume.timer` as well as the
+existing hourly and Friday timers. It acts only on an unfinished weekly job and
+honours `rollout.digest_enabled`; it does not send every five minutes. Inspect
+`automation-status` for blocked jobs or failed/ambiguous notifications. To pause all:
+`systemctl --user stop pubmail-hourly.timer pubmail-weekly.timer pubmail-resume.timer`.
+
+Finally choose `rollout.live_after`, then enable the rollout flags. Installation,
+configuring review, and running the fictional test do not activate mailbox work.
+Keep historical pending cases separate from the live cutover.

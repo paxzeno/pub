@@ -183,7 +183,10 @@ def apply(gmail, c, store, id, sha):
             store.db.commit()
             continue
         sec, _, _ = security(m, c)
-        if sec != "verified" or preclassify(m, c)[0] == "keep":
+        from .reviewer import protected_approval
+        kind,reason=preclassify(m,c)
+        protected_override=reason.startswith('Protected') and protected_approval(d,m,c,store)
+        if sec != "verified" or (kind == "keep" and not protected_override):
             skipped.append(d["id"])
             continue
         prior = ads in m["labels"]

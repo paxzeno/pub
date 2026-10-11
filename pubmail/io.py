@@ -108,6 +108,8 @@ def load_config(path):
             raise Error("Image paths must be narrowly scoped")
         if not isinstance(rule.get('query_keys', []), list) or any(not isinstance(k, str) for k in rule.get('query_keys', [])):
             raise Error("Image query keys must be a list")
+    from .automation import validate_config as validate_automation
+    validate_automation(c)
     from .reviewer import validate_config
     validate_config(c)
     if c["newsletter"]["format"] not in ("html", "text", "multipart"):

@@ -7,7 +7,7 @@ from email.utils import formatdate
 from zoneinfo import ZoneInfo
 from jinja2 import Environment, PackageLoader, select_autoescape
 from .core import normalize, security, safe_text
-from .io import Error, ProcessingPending, private_write, run
+from .io import Error, ProcessingPending, private_write, run, policy_hash
 
 
 def summary_blocks(summary):
@@ -272,7 +272,14 @@ def prepare(gmail, c, model, store):
             "deadline": None,
         }
         try:
-            result = model.classify(m)
+            from .vision import enrich
+            m = enrich(m,c,reviewer=getattr(model,'reviewer',None)) if sec=='verified' else m
+            cache_key='summary:'+policy_hash(c)+':'+hashlib.sha256(json.dumps({'source':m['headers_hash'],'body':m['body'],'visual_evidence':m.get('visual_evidence')},sort_keys=True).encode()).hexdigest()
+            cached=store.db.execute('SELECT value FROM meta WHERE key=?',(cache_key,)).fetchone()
+            if cached:result=json.loads(cached[0])
+            else:
+                result = model.classify(m)
+                store.db.execute('INSERT OR REPLACE INTO meta VALUES(?,?)',(cache_key,json.dumps(result)));store.db.commit()
             d.update(
                 {
                     k: result.get(k)
@@ -374,6 +381,11 @@ def send(gmail, c, store, id):
     file = store.root / "digests" / f"{id}.eml"
     if hashlib.sha256(file.read_bytes()).hexdigest() != p["mime_sha256"]:
         raise Error("Preview MIME changed; regenerate")
+    if c.get('automation',{}).get('enabled'):
+        review=p.get('final_review',{})
+        if (review.get('policy')!=policy_hash(c) or review.get('mime_sha256')!=p['mime_sha256']
+            or review.get('sources')!={i['id']:i['message']['headers_hash'] for i in p['items']+p['flagged']}):
+            raise Error('Final review missing or stale; sending blocked')
     store.delivery(id, "sending", p)
     try:
         n = c["newsletter"]

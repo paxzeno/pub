@@ -199,3 +199,13 @@ vision:
   pass_seconds: 120
   enabled: false
   model: {}
+
+# Durable scheduled review/resume. Does NOT activate rollout flags by itself.
+automation:
+  enabled: false
+  notify_timeout_seconds: 30
+  notify_env: {}  # Optional runtime configuration paths; secrets belong in a secret provider
+  # JSON event on stdin. Use any notification/wake adapter; metadata only.
+  senior_notify_argv: [python3, -m, pubmail.openclaw_notify, --session-key, 'agent:main:main']
+  # Owner-needed events also go to the agent, which presents the actual question.
+  owner_notify_argv: [python3, -m, pubmail.openclaw_notify, --session-key, 'agent:main:main']

@@ -43,7 +43,7 @@ def model_image(b64):
         return base64.b64encode(stream.getvalue()).decode()
 
 
-def enrich(m,c):
+def enrich(m,c,reviewer=None):
     policy=c.get('vision',{})
     if not policy.get('enabled') or m.get('_vision_enriched'):
         return m
@@ -85,7 +85,20 @@ def enrich(m,c):
                     result=validate(reader.ask(PROMPT,{'task':'Extract visible email-image evidence. Every title must also appear in text. If this is a product or logo use no titles.', 'validation_retry':bool(attempt)},images=[model_image(b64)]))
                     break
                 except Error:
-                    if attempt:raise
+                    if attempt:
+                        if reviewer is None or not c.get('automation',{}).get('enabled'):raise
+                        image_file=root/'inputs'/(fingerprint+'.png')
+                        image_file.parent.mkdir(mode=0o700,parents=True,exist_ok=True)
+                        if not image_file.exists():
+                            image_file.write_bytes(base64.b64decode(b64));image_file.chmod(0o600)
+                        task={'reason':'image_evidence','prompt':PROMPT,
+                              'image_files':[str(image_file)],
+                              'data':{'image_sha256':fingerprint,'source_id':m['id']}}
+                        out=reviewer.exchange([task],[validate])
+                        if 0 not in out:raise Error('Image evidence awaiting senior resolution')
+                        result=validate(out[0])
+                        private_write(review_path,json.dumps({'image':fingerprint,'reviewer':'configured senior',
+                            'reason':'Validated source-bound image review','output':result}))
             private_write(path,json.dumps(result))
         evidence.append({'image':fingerprint,**result});titles.extend(result['titles'])
     out=dict(m);out['_vision_enriched']=True;out['visual_evidence']=evidence

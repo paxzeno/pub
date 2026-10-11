@@ -94,3 +94,15 @@ available even when no sender-provided web links survive.
 Keep real sender details and approval records private; public examples are fictional.
 Preserve historical sent manifests. Regenerate a preview when requested; clearing a
 security flag alone neither resends mail nor archives/newsletter-labels its source.
+
+### Automated review boundary
+With automation enabled, SMTP requires an exact-MIME/source/policy-bound senior
+review receipt. Changed MIME, source or policy invalidates it. Accepted SMTP with
+unfinished labels can recover labels without resending; uncertain SMTP requires
+explicit reconciliation. Timed-out/interrupted reviewer invocations are not blindly
+retried; corrected responses are imported and validated on use.
+Image review may use a read-only viewer on application-created local image files.
+Prompt restrictions are not a sandbox: deploy the reviewer with appropriate tool
+permissions. Email text cannot choose notification commands, destinations or trust
+rules. Notifications contain only private event references; adapters and filesystem
+state must retain the same confidentiality as the source mail.

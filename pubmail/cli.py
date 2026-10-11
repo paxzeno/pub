@@ -17,10 +17,15 @@ def main():
     sub.add_parser("check")
     sub.add_parser("review-status")
     sub.add_parser("review-test")
+    sub.add_parser("automation-test")
     sub.add_parser("init-labels")
     sub.add_parser("oldest-week")
     sub.add_parser("hourly")
     sub.add_parser("weekly")
+    sub.add_parser("resume")
+    sub.add_parser("automation-status")
+    a=sub.add_parser("automation-retry");a.add_argument("job",choices=['weekly'])
+    a=sub.add_parser("review-resolve");a.add_argument("id");a.add_argument("--file",required=True)
     p = sub.add_parser("digest-preview")
     p.add_argument("--plan", help="Preview proposed plan without sending or labelling")
     p = sub.add_parser("plan")
@@ -29,6 +34,8 @@ def main():
     p.add_argument("id")
     p.add_argument("--sha256", required=True)
     p = sub.add_parser("undo")
+    p.add_argument("id")
+    p = sub.add_parser("digest-review")
     p.add_argument("id")
     p = sub.add_parser("digest-send")
     p.add_argument("id")
@@ -40,6 +47,9 @@ def main():
     store = None
     try:
         c = load_config(args.config)
+        if args.command == 'automation-test':
+            from .automation import smoke_test
+            print(json.dumps(smoke_test(c)));return
         if args.command == "review-test":
             from .reviewer import smoke_test
             print(json.dumps(smoke_test(c)))
@@ -52,6 +62,23 @@ def main():
             if not c["rollout"].get(key):
                 print(json.dumps({"status": "paused", "job": args.command}))
                 return
+        if args.command in ('weekly','resume') and c.get('automation',{}).get('enabled'):
+            from .automation import run_weekly
+            result=run_weekly(gmail,c,model,store,start=args.command=='weekly')
+            print(json.dumps(result))
+            if result.get('status')=='blocked':parser.exit(1,'pubmail: workflow blocked; inspect automation-status\n')
+            return
+        if args.command in ('automation-status','automation-retry','review-resolve','resume'):
+            from . import automation
+            automation.setup(store)
+            if args.command=='automation-status':
+                out={'jobs':dict(store.db.execute('SELECT name,state FROM automation_jobs')),
+                     'notifications':dict(store.db.execute('SELECT status,count(*) FROM automation_events GROUP BY status')),
+                     'reviews':model.reviewer.status()}
+            elif args.command=='automation-retry':out=automation.retry(c,store,args.job)
+            elif args.command=='review-resolve':out=automation.resolve(store,args.id,args.file)
+            else:out={'status':'paused'}
+            print(json.dumps(out));return
         if args.command == "review-status":
             out = model.reviewer.status()
         elif args.command == "check":
@@ -98,6 +125,12 @@ def main():
                     },
                 }
                 if args.command == "hourly":
+                    if c.get('automation',{}).get('enabled'):
+                        from .automation import setup,surface_reviews
+                        setup(store);surface_reviews(c,store,'hourly')
+                        if any(d['action']=='review' for d in p['decisions']):
+                            from .automation import notify
+                            notify(c,store,'hourly','security_review',[p['id']])
                     out["result"] = workflow.apply(gmail, c, store, p["id"], sha)
                     if not any(d.get("retry") for d in p["decisions"]):
                         store.db.execute(
@@ -125,6 +158,10 @@ def main():
             )
             if p and args.command == "weekly":
                 out = digest.send(gmail, c, store, p["id"])
+        elif args.command == "digest-review":
+            from .automation import final_review
+            p=final_review(c,model,store,args.id)
+            out={"reviewed":p["id"],"mime_sha256":p["mime_sha256"]}
         elif args.command == "digest-send":
             out = digest.send(gmail, c, store, args.id)
         else:
@@ -142,6 +179,9 @@ def main():
     except ProcessingPending as e:
         parser.exit(75, f"pubmail: pending image work: {e}\n")
     except Error as e:
+        if store and c.get('automation',{}).get('enabled') and args.command in ('hourly','weekly','resume'):
+            from .automation import setup,notify
+            setup(store);notify(c,store,args.command,'workflow_blocked')
         parser.exit(1, f"pubmail: {e}\n")
     finally:
         if store:

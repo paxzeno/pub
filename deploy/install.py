@@ -14,6 +14,7 @@ exe = root / ".venv/bin/pubmail"
 for name, cmd, schedule in [
     ("hourly", "hourly", "hourly"),
     ("weekly", "weekly", "Fri *-*-* 11:00:00 Europe/Lisbon"),
+    ("resume", "resume", "*:0/5"),
 ]:
     service = f"""[Unit]
 Description=Pubmail {name} (guarded by local rollout config)
@@ -50,6 +51,7 @@ subprocess.run(
         "--now",
         "pubmail-hourly.timer",
         "pubmail-weekly.timer",
+        "pubmail-resume.timer",
     ],
     check=True,
 )
