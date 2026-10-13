@@ -14,15 +14,20 @@ until explicitly enabled. MIT licensed. See [AGENTS.md](AGENTS.md) and [SECURITY
 2. Keep whitelisted, transactional, personal, uncertain messages. Long summaries use an explicitly disclosed text prefix.
 3. Authenticate sender/relay and compare link domains; evaluate content independently.
 4. Preview proposed archive actions and review-only candidates in a private report.
-5. Apply only a reviewed, unchanged plan; add `adds`, remove `INBOX`, leave `UNREAD` alone.
+5. Apply only a reviewed, unchanged plan; add `ads`, remove `INBOX`, leave `UNREAD` alone.
 6. Each Friday at 11:00 in Europe/Lisbon, combine undigested mail into topic cards.
-7. Send using a separate authenticated account, then add `adds/newsletter` and remove `adds` in the same per-message update.
+7. Send using a separate authenticated account, then add `ads/newsletter` and remove `ads` in the same per-message update.
 
-`adds` is the pending newsletter queue; `adds/newsletter` is delivered history.
+`ads` is the pending newsletter queue; `ads/newsletter` is delivered history.
+Label names are configurable. Existing installations keep their explicit `labels`
+settings; this update does not rename Gmail labels. To adopt the corrected names,
+rename the existing labels in Gmail and update both config values together while
+jobs are paused, preserving the existing messages and label IDs. Regenerate pending
+plans after changing configuration.
 Delivery labelling preserves read/unread, inbox/archive and all other labels.
 Interrupted label updates resume without sending the newsletter again.
 
-Messages already in `adds` are digest-eligible even if later read. Suspicious candidates
+Messages already in `ads` are digest-eligible even if later read. Suspicious candidates
 remain in the inbox and enter a private review queue when their plan is applied.
 
 ## Install

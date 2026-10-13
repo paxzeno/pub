@@ -118,7 +118,7 @@ def load_config(path):
     Path(c["state_dir"]).mkdir(mode=0o700, parents=True, exist_ok=True)
     if Path(c["state_dir"]).stat().st_mode & 0o077:
         raise Error("State directory must have mode 0700")
-    c.setdefault("labels", {"ads": "adds", "newsletter": "adds/newsletter"})
+    c.setdefault("labels", {"ads": "ads", "newsletter": "ads/newsletter"})
     return c
 
 

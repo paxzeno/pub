@@ -4,8 +4,8 @@ client: default
 state_dir: ~/.local/state/pub
 labels:
   # Separate stages: pending ads -> delivered newsletter (remove ads after sending).
-  ads: adds
-  newsletter: adds/newsletter
+  ads: ads
+  newsletter: ads/newsletter
 timezone: Europe/Lisbon
 # Command must print ONLY the keyring password. No shell expansion is used.
 keyring_password_command: []

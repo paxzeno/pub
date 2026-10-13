@@ -50,7 +50,7 @@ class FakeGmail:
     def __init__(self, rs):
         self.messages = {r["id"]: r for r in rs}
         self.calls = []
-        self.names = {"adds": "L1", "adds/newsletter": "L2"}
+        self.names = {"ads": "L1", "ads/newsletter": "L2"}
 
     def raw(self, id):
         return copy.deepcopy(self.messages[id])

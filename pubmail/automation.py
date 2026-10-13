@@ -230,7 +230,7 @@ def smoke_test(c):
         try:
             m=EscalatingModel(cfg,s)
             class Fixture:
-                def labels(self):return {'adds':'ads','adds/newsletter':'done'}
+                def labels(self):return {'ads':'ads','ads/newsletter':'done'}
                 def search(self,*a):return ([{'id':'fictional'}],False)
                 def raw(self,ident):
                     return {'id':'fictional','threadId':'fictional','internalDate':'1791676800000','labelIds':['ads','UNREAD'],

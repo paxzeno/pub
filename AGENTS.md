@@ -33,7 +33,7 @@ Read README.md, SECURITY.md and this file before operating this repository.
   ads-labelled mail and review records. Preserve those for explicit historical plan previews.
 
 ## Digest
-- Eligibility: adds without adds/newsletter, regardless of whether subsequently read.
+- Eligibility: ads without ads/newsletter, regardless of whether subsequently read.
 - Include approved review-queue items as text-only, without sender links or images.
 - Presentation groups normal messages by exact verified original sender: one
   representative original-email thumbnail per sender, even across different topics.
@@ -50,11 +50,11 @@ Read README.md, SECURITY.md and this file before operating this repository.
   the configured bounded image loader described below; never fetch tracking pixels.
   Embed only the resulting PNG, never source HTML. Flagged items remain text-only.
 - Copy only validated original HTTPS unsubscribe URLs; never follow them automatically.
-- Mark adds/newsletter only after confirmed SMTP acceptance. Local preview is not delivery.
-- In that same per-message update, remove adds: pending and delivered are separate
+- Mark ads/newsletter only after confirmed SMTP acceptance. Local preview is not delivery.
+- In that same per-message update, remove ads: pending and delivered are separate
   pipeline stages. Preserve all other labels, including INBOX and UNREAD. Accepted-send
   recovery repeats this idempotent label transition without resending. For approved
-  historical previews finalized manually, also remove adds rather than retaining both.
+  historical previews finalized manually, also remove ads rather than retaining both.
 - Write send intent before SMTP; uncertain delivery blocks all further sends.
 - Reconcile ambiguity with actual Sent/recipient evidence; no blind retry.
 - Newsletter From must be supported by its separately authenticated sending account.
