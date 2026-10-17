@@ -229,6 +229,20 @@ class Automation(unittest.TestCase):
    a.final_review(self.c,self.m,self.s,p['id'])
   digest.finish_labels(self.g,self.c,self.s,p['id'],p)
   self.assertEqual(self.g.calls,[])
+ def test_skipped_identity_only_for_verified_sources(self):
+  source={'id':'abc123','sender':'shop@example.com','original_sender':'shop@example.com',
+          'thread_id':'thread123','rfc_message_id':'message@example.com'}
+  verified={'id':source['id'],'subject':'Offer','reason':'Review incomplete',
+            **digest.skipped_identity(source,True)}
+  h,t,_=digest.render(self.c,[],[],[],skipped=[verified])
+  self.assertIn('From: shop@example.com',h);self.assertIn('From: shop@example.com',t)
+  self.assertIn('Open original email',h);self.assertIn('rfc822msgid%3Amessage%40example.com',h)
+  self.assertEqual(digest.skipped_identity(source,False),{})
+  for entry in [dict(verified,security='review'),{'id':'abc123','subject':'Legacy','reason':'Incomplete'}]:
+   h,t,_=digest.render(self.c,[],[],[],skipped=[entry])
+   self.assertNotIn('Open original email',h+t);self.assertNotIn('shop@example.com',h+t)
+  h,_,_=digest.render(self.c,[],[],[],skipped=[dict(verified,sender='<script>bad</script>')])
+  self.assertNotIn('<script>',h);self.assertIn('&lt;script&gt;',h)
  def test_skipped_notice_does_not_include_private_exception_text(self):
   self.m.classify=Mock(side_effect=Error('credential=secret'))
   p=digest.prepare(self.g,self.c,self.m,self.s)

@@ -96,7 +96,7 @@
 <tr><td class="panel" style="padding:28px 32px;background:#fff4e5">
 <h2>Not included — processing failed</h2>
 <p>These messages were skipped. Their labels and read state are unchanged; they remain eligible for a future issue.</p>
-{% for item in skipped %}<div><h3>{{ item.subject }}</h3><p>{{ item.reason }}</p><p>Original Gmail message ID: {{ item.id }}</p></div>{% endfor %}
+{% for item in skipped %}<div><h3>{{ item.subject }}</h3>{% if item.sender %}<p>From: {{ item.sender }}</p>{% endif %}<p>{{ item.reason }}</p>{% if item.original_url %}<p><a href="{{ item.original_url }}">Open original email</a></p>{% endif %}<p>Original Gmail message ID: {{ item.id }}</p></div>{% endfor %}
 </td></tr>
 {% endif %}
 <tr><td style="padding:28px 24px;text-align:center;font-size:14px;line-height:1.7;background:#20221f;color:#c9cbc4;border-radius:16px"><strong style="color:#d8eba4">Less noise. More of your week.</strong><br>Nothing deleted. Originals remain in your mailbox.<br>Expired offers are explicitly marked.</td></tr>

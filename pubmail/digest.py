@@ -10,6 +10,24 @@ from .core import normalize, security, safe_text
 from .io import Error, ProcessingPending, private_write, run, policy_hash
 
 
+def original_email_url(c, m):
+    """Build an account-scoped Gmail link, never a sender-provided URL."""
+    from urllib.parse import quote
+    base = "https://mail.google.com/mail/u/?authuser=" + quote(c["account"], safe="")
+    rfc_id = m.get("rfc_message_id", "")
+    if rfc_id and not any(ch.isspace() for ch in rfc_id):
+        return base + "#search/" + quote("rfc822msgid:" + rfc_id, safe="")
+    return base + "#all/" + quote(m.get("thread_id") or m["id"], safe="")
+
+
+def skipped_identity(m, verified):
+    """Carry identification only for sources that passed deterministic safety checks."""
+    if not m or not verified:
+        return {}
+    return {"security": "verified", "sender": m.get("original_sender") or m["sender"],
+            "thread_id": m.get("thread_id"), "rfc_message_id": m.get("rfc_message_id", "")}
+
+
 def summary_blocks(summary):
     """Email-safe list structure; no dependence on CSS whitespace preservation."""
     import re
@@ -93,13 +111,7 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
             if not unsub:
                 from .core import unsubscribe_control
                 unsub = unsubscribe_control(m, c)
-            # This is our Gmail link, not a link supplied in the email.
-            from urllib.parse import quote
-            rfc_id = m.get("rfc_message_id", "")
-            if rfc_id and not any(ch.isspace() for ch in rfc_id):
-                original = "https://mail.google.com/mail/u/?authuser=" + quote(c["account"], safe="") + "#search/" + quote("rfc822msgid:" + rfc_id, safe="")
-            else:
-                original = "https://mail.google.com/mail/u/?authuser=" + quote(c["account"], safe="") + "#all/" + quote(m.get("thread_id") or m["id"], safe="")
+            original = original_email_url(c, m)
             entries.append(
                 dict(
                     title=i["title"],
@@ -183,11 +195,20 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
             "Original Gmail message ID: " + f["id"],
             "",
         ]
-    omissions = [{k:safe_text(str(v)) for k,v in entry.items() if k in ('id','subject','reason')} for entry in (skipped or [])]
+    omissions = []
+    for entry in skipped or []:
+        notice = {k:safe_text(str(v)) for k,v in entry.items() if k in ('id','subject','reason')}
+        if entry.get('security') == 'verified' and entry.get('sender'):
+            notice['sender'] = entry['sender']
+            notice['original_url'] = original_email_url(c, entry)
+        omissions.append(notice)
     if omissions:
         text += ['## NOT INCLUDED — PROCESSING FAILED', 'These messages were skipped; their labels and read state are unchanged.', '']
         for entry in omissions:
-            text += [entry.get('subject',''), 'Original Gmail message ID: '+entry['id'], 'Reason: '+entry['reason'], '']
+            text += [entry.get('subject','')]
+            if entry.get('sender'):
+                text += ['From: '+entry['sender'], 'Open original email: '+entry['original_url']]
+            text += ['Original Gmail message ID: '+entry['id'], 'Reason: '+entry['reason'], '']
     env = Environment(
         loader=PackageLoader("pubmail", "templates"),
         autoescape=select_autoescape(["html"]),
@@ -273,6 +294,7 @@ def prepare(gmail, c, model, store):
         if row["id"] in delivered:
             continue
         m = None
+        sec = None
         try:
             m = normalize(gmail.raw(row["id"]), c["limits"]["body_characters"])
             # Historical ads/review records remain untouched for explicit catch-up.
@@ -317,7 +339,7 @@ def prepare(gmail, c, model, store):
                 from .diagnostics import failure_details
                 details=failure_details(exc,'source_prepare')
                 reason=details['chain'][0]['message']
-                skipped.append({'id':m['id'],'subject':m['subject'],'reason':reason,'diagnostic':details})
+                skipped.append({'id':m['id'],'subject':m['subject'],'reason':reason,'diagnostic':details, **skipped_identity(m, sec=='verified')})
                 continue
             d.update(
                 id=m["id"], message=m, security=sec, security_reason=reason, safe_urls=urls
@@ -330,7 +352,7 @@ def prepare(gmail, c, model, store):
             from .diagnostics import failure_details
             details=failure_details(exc,'source_prepare')
             skipped.append({'id':row['id'],'subject':m.get('subject','Source unavailable') if m else 'Source unavailable',
-                            'reason':details['chain'][0]['message'],'diagnostic':details})
+                            'reason':details['chain'][0]['message'],'diagnostic':details, **skipped_identity(m, sec=='verified')})
     if not items and not flagged and not skipped:
         return None
     # Sender grouping is deterministic in render; no semantic-model call needed.
