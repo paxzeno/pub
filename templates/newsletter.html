@@ -56,6 +56,7 @@
     {% else %}<p style="font-size:17px;line-height:1.7;margin:0 0 16px;overflow-wrap:anywhere">{{ block.text }}</p>{% endif %}
     {% endfor %}
     {% if item.text_trimmed %}<p style="font-size:14px;line-height:1.6;color:#62665d;margin:0 0 8px">long email, it was trimmed</p>{% endif %}
+    {% if item.coverage_notice %}<p style="font-size:12px;color:#666">{{ item.coverage_notice }}</p>{% endif %}
     {% if item.relative_notice %}<p style="font-size:14px;font-weight:bold;line-height:1.6">TIME-SENSITIVE<br>{{ item.relative_notice }}</p>{% endif %}
     {% if item.event_display %}
     <p style="font-size:14px;line-height:1.6;font-weight:bold;margin:0 0 18px;padding:10px 12px;border-left:3px solid {% if item.event_status == 'ENDED' %}#a92932{% else %}#4b5a2d{% endif %};color:{% if item.event_status == 'ENDED' %}#a92932{% else %}#4b5a2d{% endif %}">EVENT {{ item.event_status }}<br>{{ item.event_display }}</p>
@@ -91,6 +92,13 @@
 </td></tr>
 {% endif %}
 <tr><td height="18" style="font-size:0;line-height:0">&nbsp;</td></tr>
+{% if skipped %}
+<tr><td class="panel" style="padding:28px 32px;background:#fff4e5">
+<h2>Not included — processing failed</h2>
+<p>These messages were skipped. Their labels and read state are unchanged; they remain eligible for a future issue.</p>
+{% for item in skipped %}<div><h3>{{ item.subject }}</h3><p>{{ item.reason }}</p><p>Original Gmail message ID: {{ item.id }}</p></div>{% endfor %}
+</td></tr>
+{% endif %}
 <tr><td style="padding:28px 24px;text-align:center;font-size:14px;line-height:1.7;background:#20221f;color:#c9cbc4;border-radius:16px"><strong style="color:#d8eba4">Less noise. More of your week.</strong><br>Nothing deleted. Originals remain in your mailbox.<br>Expired offers are explicitly marked.</td></tr>
 </table>
 </td></tr></table>

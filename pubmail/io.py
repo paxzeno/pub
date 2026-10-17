@@ -21,9 +21,9 @@ def run(argv, *, env=None, input=None, timeout=90):
     except (OSError, subprocess.TimeoutExpired) as e:
         raise Error(f"{argv[0]} unavailable or timed out") from e
     if r.returncode:
-        raise Error(
-            f"{argv[0]} failed (exit {r.returncode}); output suppressed to protect mail/credentials"
-        )
+        exc=Error(f"{argv[0]} failed; output suppressed to protect mail/credentials")
+        exc.returncode=r.returncode
+        raise exc
     return r.stdout
 
 
@@ -92,6 +92,7 @@ def load_config(path):
     images = c.get("image_loading", {})
     if not isinstance(controls, dict) or not isinstance(images, dict) or type(images.get("enabled", False)) is not bool:
         raise Error("Invalid image/subscription configuration")
+    if images.get("mode", "scoped") not in ("scoped","public_https"):raise Error("Invalid image loading mode")
     hosts = images.get("hosts", {})
     if not isinstance(hosts, dict):
         raise Error("Image hosts must be an exact-host mapping")
@@ -101,7 +102,17 @@ def load_config(path):
     for paths in controls.values():
         if not isinstance(paths, list) or any(not isinstance(p, str) or not p.startswith('/') or '?' in p for p in paths):
             raise Error("Subscription controls require exact paths")
-    for rule in hosts.values():
+    scopes=images.get('sender_hosts',{})
+    if not isinstance(scopes,dict):raise Error('Image sender scopes must be a mapping')
+    scoped_rules=[]
+    for sender,mapping in scopes.items():
+        if not isinstance(sender,str) or not re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+',sender) or sender!=sender.lower() or not isinstance(mapping,dict):
+            raise Error('Invalid image sender scope')
+        for h,rule in mapping.items():
+            if not isinstance(h,str) or not re.fullmatch(r'[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}',h):raise Error('Invalid scoped image hostname')
+            scoped_rules.append(rule)
+    for rule in list(hosts.values())+scoped_rules:
+        if isinstance(rule,dict) and type(rule.get('allow_timestamp_query',False)) is not bool:raise Error('Invalid image timestamp-query policy')
         if not isinstance(rule, dict) or not isinstance(rule.get('path_prefixes'), list) or not rule['path_prefixes']:
             raise Error("Image host requires path prefixes")
         if any(not isinstance(p, str) or not p.startswith('/') or p == '/' for p in rule['path_prefixes']):

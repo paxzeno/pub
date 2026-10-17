@@ -73,6 +73,10 @@ def main():
             automation.setup(store)
             if args.command=='automation-status':
                 out={'jobs':dict(store.db.execute('SELECT name,state FROM automation_jobs')),
+                     'job_errors':automation.job_errors(store),
+                     'notification_errors':{i:json.loads(b)['notification_error'] for i,b in store.db.execute("SELECT id,body FROM automation_events WHERE status='failed'") if 'notification_error' in json.loads(b)},
+                     'review_errors':{i:json.loads(r)['error'] for i,r in store.db.execute("SELECT id,result FROM senior_items WHERE status='failed' AND result IS NOT NULL") if 'error' in json.loads(r)},
+                     'handoffs':{i:{'status':s,'review_ids':json.loads(b).get('review_ids',[]),'acknowledged':bool(json.loads(b).get('handoff_receipt'))} for i,s,b in store.db.execute('SELECT id,status,body FROM automation_events')},
                      'notifications':dict(store.db.execute('SELECT status,count(*) FROM automation_events GROUP BY status')),
                      'reviews':model.reviewer.status()}
             elif args.command=='automation-retry':out=automation.retry(c,store,args.job)

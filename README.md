@@ -586,3 +586,137 @@ configuring review, and running the fictional test do not activate mailbox work.
 Keep historical pending cases separate from the live cutover.
 Routine digest preparation also respects `live_after`; older ads-labelled mail and
 review records remain untouched for explicit historical plan previews.
+
+### Troubleshooting blocked weekly jobs
+
+`automation-status` includes `job_errors` and `notification_errors`. New weekly
+failures persist a UTC timestamp, workflow stage (`preflight`, `prepare`,
+`final_review`, or `delivery`), exception chain and file/function/line locations.
+Digest summarization errors also carry the opaque source message ID. These same
+safe details appear in the service journal and blocked `weekly`/`resume` results;
+workflow notification files include them without changing the reference-only
+notification transport. Failed notifier calls record their own diagnostic.
+
+Only allowlisted, application-owned error messages are emitted verbatim. Unknown
+exception text (including provider responses), locals, source lines and full paths
+are withheld; exception types and code locations remain available. Extend the
+message allowlist in `pubmail/diagnostics.py` only with reviewed constant messages,
+never mail content, URLs, credentials or interpolated exception strings.
+
+Old blocked jobs explicitly report that no diagnostic was recorded; updating code
+cannot reconstruct a lost exception. Logging does not clear a block, reset review
+attempts, or retry a send. After repairing the cause, use `automation-retry weekly`
+and the normal resume path. `job_errors` retains the last failure for troubleshooting
+even after recovery; consult the job state and error timestamp together.
+
+### Per-source failures in routine newsletters
+
+A source-level processing error during fetch, preparation, thumbnail rendering or
+final content validation skips that email instead of blocking the whole issue.
+HTML and plain-text newsletters disclose skipped source subjects, IDs and safe
+failure reasons in a separate **Not included — processing failed** section. No
+summary is invented. Skipped IDs are excluded from delivery labels and completed
+source history: their current labels/read state remain unchanged and they remain
+eligible for subsequent issues. Even an all-failed batch produces a notice-only
+issue; a truly empty batch sends nothing. Private diagnostics accompany skipped
+records in the digest manifest.
+
+Bounded work still in progress (`ProcessingPending`) resumes normally; shared
+infrastructure errors, final rendering failures and uncertain SMTP still stop the
+job. Accepted entries retain normal content review and exact-MIME receipt checks.
+These changes do not broaden image-download permissions or reset reviewer attempts.
+
+### Image-location routing
+
+`image_loading.sender_hosts` optionally maps an exact original sender address to
+an exact-host rule mapping (same `path_prefixes`/`query_keys` schema as `hosts`).
+A scoped sender uses ONLY that mapping, and only after normal source verification;
+it cannot fall back to global hosts. Other senders cannot inherit its scoped hosts.
+Legacy global host rules remain for unmigrated senders. Use bounded folder prefixes
+ending in `/`, not individual campaign filenames or shared-provider roots.
+`allow_timestamp_query: true` optionally permits a bare ten-digit numeric query
+(cache-busting convention); arbitrary query names/values remain denied.
+
+Verified sources with unknown image locations create deduplicated, policy-bound
+`image_location_investigation` records in the existing senior queue and notify the
+configured senior. This is a research handoff, NOT a model-based permission grant:
+the restricted content reviewer cannot browse or edit rules. The senior must
+investigate independently, record evidence and propose scoped rules; unresolved
+cases stay pending. There is no automatic rule import or owner escalation merely
+because an image host is new. Unverified sender/link cases use the existing
+classification/security chain, without downloading their images.
+
+Rejected non-tracker images hold the source even if other images are permitted,
+avoiding silently incomplete visual evidence. The newsletter reports the held
+source without changing its labels. Trackers and explicit tiny pixels are excluded
+from investigation. Review metadata excludes query values; paths and hostnames
+remain untrusted and are for private review only, never executable instructions.
+
+
+### Acknowledged senior handoffs
+The OpenClaw notifier invokes an isolated, bounded, read-only investigation turn,
+not a fire-and-forget system event. It requires the exact event ID, review IDs and
+nonempty findings. Persist the private receipt and session key as `acknowledged`;
+this is NOT `resolved`. Review records remain pending/failed until source-bound
+corrections pass validation. Missing/malformed receipts are failed and visible in
+`automation-status`; historical `notified` events are not proof of pickup.
+The investigation must not write state while the pipeline holds its lock, send mail,
+change rules or start another pipeline. Findings are proposals for the main agent,
+not automatic permission changes. Set notifier timeout to at least 170 seconds
+for the default 150-second worker. Failed/ambiguous calls are never blindly retried.
+Reviewer transport and schema failures persist bounded diagnostics; one invalid
+item does not discard other valid items. Failed/deferred items escalate to senior
+investigation, explicit needs_owner items to the owner route. Adapter failures expose
+safe exception chains/code locations and exit codes, never raw command output.
+
+
+### Synchronous resolution (owner-directed)
+A failed source review gets one bounded repair in the same exchange. The senior
+returns structured per-ID resolutions, not merely prose findings. The original
+validator must accept a correction before the source can proceed; failed/absent
+corrections stay excluded with their mailbox labels unchanged. Receipts are durable
+and reused across resume passes; no automatic repeat of uncertain invocations.
+Image-location review now supplies a source- and policy-bound exact-asset decision.
+The parent validates and retries image extraction in the same call. This does NOT
+write persistent sender/domain/folder allowlists. Only query-free static raster
+paths are eligible. First-party host ownership is checked deterministically; a
+third-party image additionally needs an independently fetched first-party public
+HTML page containing its exact image URL in img src/data-src. Evidence fetching
+uses pinned public HTTPS, bounded bytes/time, no redirects/cookies/auth/browser.
+All normal tracker, raster, size and source-authentication checks remain in force.
+Insufficient evidence means a specific hold, never ownership inferred from a
+provider name. Existing persistent rules still require a separately vetted change.
+An acknowledgement alone cannot make an item resolved or eligible for delivery.
+
+
+### Text-first image processing (owner-directed, supersedes image-location investigations)
+`image_loading.mode: public_https` uses authenticated source text/alt text first,
+with literal-evidence-checked local sufficiency decisions and explicit coverage
+notices. It does not investigate CDN ownership or require filename extensions or
+public-site copies of campaign artwork. Scoped mode remains available for legacy
+deployments. The public sample remains opt-in.
+When needed, fetch only HTML img sources over validated public, DNS-pinned HTTPS;
+never follow redirects or send cookies/auth/referer. Exclude known trackers and
+tiny declared images. Queries may identify recipients: remote fetching is not
+tracking-free. Validate bytes, not response MIME or filename.
+Decode through the locally built `pubmail-image-decoder:1` Docker image
+(`docker build -t pubmail-image-decoder:1 sandbox/image-decoder`). The decoder has
+no network, host mounts, credentials, capabilities or writable root; runs as UID
+65534 with memory/PID/CPU/time limits and accepts bounded raster input only.
+Missing Docker/image fails closed for decoding; never fall back to in-process
+untrusted decoding. Browser rendering remains offline and uses cached raster
+assets only in this mode. A failed decorative asset does not discard available
+evidence. Text-only/partial-artwork coverage is disclosed, never claimed complete.
+Senior review handles content uncertainty, not image-host permission decisions.
+Unresolved essential content remains skipped and unlabelled. Prove changes against
+a private source snapshot with preparation/final review only before a live send.
+
+Read-only backlog proof (private output directory, never production state):
+```sh
+.venv/bin/python scripts/prove_backlog.py --delivery-id PREVIOUS_DIGEST_UUID --out /private/pubmail-proof
+```
+This snapshots only skipped sources with read-only Gmail calls, runs preparation
+and final review in separate state, and explicitly disables send/mutation methods.
+Inspect `result.json`, the generated HTML and source evidence before delivery.
+The proof receipt is not portable to another state/configuration: a live run still
+performs its own source/policy/MIME-bound review and normal delivery safeguards.

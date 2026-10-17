@@ -466,3 +466,84 @@ SMTP state. Config changes invalidate approval and require fresh preparation.
 Notification intents are durable; crashes become ambiguous and are not blindly
 reissued. Inspect failed notifications through `automation-status` and service logs.
 Never delete state to force a retry. Live cutover is still explicit.
+
+### Routine per-source failure isolation (owner-directed)
+
+Routine digest preparation/final source review skips failed sources and discloses
+safe failure notices in both newsletter formats. Never include skipped IDs in
+label transitions or delivered-source history; preserve their current labels and
+read state for a later issue. A notice is not delivery of that source. No guessed
+summaries or expanded image permissions. ProcessingPending and global delivery
+safety failures retain their existing semantics. Historical preview flows are
+unchanged.
+
+### Image-location investigation routing
+
+Unknown non-tracker locations on verified mail are held per source and queued as
+`image_location_investigation` for senior notification. This task is separate from
+the restricted content/image reviewer: its response cannot itself grant image
+permissions. Investigate using independent public evidence, propose exact-sender,
+exact-host, bounded-folder scopes, and leave unresolved cases pending. Do not
+escalate every new host to the owner or automatically import suggested trust rules.
+Sender-scoped permissions replace, rather than augment, global host permissions
+for that sender. Preserve source authentication, pinned public HTTPS, no redirects,
+query restrictions and raster limits. Tests must reject cross-sender inheritance.
+
+
+### Acknowledged senior handoffs
+The OpenClaw notifier invokes an isolated, bounded, read-only investigation turn,
+not a fire-and-forget system event. It requires the exact event ID, review IDs and
+nonempty findings. Persist the private receipt and session key as `acknowledged`;
+this is NOT `resolved`. Review records remain pending/failed until source-bound
+corrections pass validation. Missing/malformed receipts are failed and visible in
+`automation-status`; historical `notified` events are not proof of pickup.
+The investigation must not write state while the pipeline holds its lock, send mail,
+change rules or start another pipeline. Findings are proposals for the main agent,
+not automatic permission changes. Set notifier timeout to at least 170 seconds
+for the default 150-second worker. Failed/ambiguous calls are never blindly retried.
+Reviewer transport and schema failures persist bounded diagnostics; one invalid
+item does not discard other valid items. Failed/deferred items escalate to senior
+investigation, explicit needs_owner items to the owner route. Adapter failures expose
+safe exception chains/code locations and exit codes, never raw command output.
+
+
+### Synchronous resolution (owner-directed)
+A failed source review gets one bounded repair in the same exchange. The senior
+returns structured per-ID resolutions, not merely prose findings. The original
+validator must accept a correction before the source can proceed; failed/absent
+corrections stay excluded with their mailbox labels unchanged. Receipts are durable
+and reused across resume passes; no automatic repeat of uncertain invocations.
+Image-location review now supplies a source- and policy-bound exact-asset decision.
+The parent validates and retries image extraction in the same call. This does NOT
+write persistent sender/domain/folder allowlists. Only query-free static raster
+paths are eligible. First-party host ownership is checked deterministically; a
+third-party image additionally needs an independently fetched first-party public
+HTML page containing its exact image URL in img src/data-src. Evidence fetching
+uses pinned public HTTPS, bounded bytes/time, no redirects/cookies/auth/browser.
+All normal tracker, raster, size and source-authentication checks remain in force.
+Insufficient evidence means a specific hold, never ownership inferred from a
+provider name. Existing persistent rules still require a separately vetted change.
+An acknowledgement alone cannot make an item resolved or eligible for delivery.
+
+
+### Text-first image processing (owner-directed, supersedes image-location investigations)
+`image_loading.mode: public_https` uses authenticated source text/alt text first,
+with literal-evidence-checked local sufficiency decisions and explicit coverage
+notices. It does not investigate CDN ownership or require filename extensions or
+public-site copies of campaign artwork. Scoped mode remains available for legacy
+deployments. The public sample remains opt-in.
+When needed, fetch only HTML img sources over validated public, DNS-pinned HTTPS;
+never follow redirects or send cookies/auth/referer. Exclude known trackers and
+tiny declared images. Queries may identify recipients: remote fetching is not
+tracking-free. Validate bytes, not response MIME or filename.
+Decode through the locally built `pubmail-image-decoder:1` Docker image
+(`docker build -t pubmail-image-decoder:1 sandbox/image-decoder`). The decoder has
+no network, host mounts, credentials, capabilities or writable root; runs as UID
+65534 with memory/PID/CPU/time limits and accepts bounded raster input only.
+Missing Docker/image fails closed for decoding; never fall back to in-process
+untrusted decoding. Browser rendering remains offline and uses cached raster
+assets only in this mode. A failed decorative asset does not discard available
+evidence. Text-only/partial-artwork coverage is disclosed, never claimed complete.
+Senior review handles content uncertainty, not image-host permission decisions.
+Unresolved essential content remains skipped and unlabelled. Prove changes against
+a private source snapshot with preparation/final review only before a live send.

@@ -177,6 +177,7 @@ ignored_tracking_domain_suffixes:
 
 # Remote artwork only, never browser networking or tracking pixels. Optional.
 image_loading:
+  mode: scoped  # opt in to public_https for text-first, isolated raster decoding
   max_download_bytes: 3000000  # Per asset; raise for larger campaign GIFs
   downloads_per_pass: 16
   enabled: false
@@ -204,9 +205,17 @@ vision:
 # Durable scheduled review/resume. Does NOT activate rollout flags by itself.
 automation:
   enabled: false
-  notify_timeout_seconds: 30
+  notify_timeout_seconds: 180
   notify_env: {}  # Optional runtime configuration paths; secrets belong in a secret provider
   # JSON event on stdin. Use any notification/wake adapter; metadata only.
   senior_notify_argv: [python3, -m, pubmail.openclaw_notify, --session-key, 'agent:main:main']
   # Owner-needed events also go to the agent, which presents the actual question.
   owner_notify_argv: [python3, -m, pubmail.openclaw_notify, --session-key, 'agent:main:main']
+
+# Optional addition inside image_loading (illustrative, not a top-level setting):
+# sender_hosts:
+#   offers@brand.example:
+#     cdn.example.com:
+#       path_prefixes: [/brand/newsletter/images/]
+#       query_keys: []
+#       allow_timestamp_query: false

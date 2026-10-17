@@ -25,7 +25,7 @@ def summary_blocks(summary):
     return blocks
 
 
-def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None):
+def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None, skipped=None):
     now = now or datetime.now(ZoneInfo(c["timezone"]))
     lookup = {i["id"]: i for i in items}
     # Topic groups determine ordering, not visual card boundaries. Each verified
@@ -105,6 +105,7 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
                     title=i["title"],
                     summary=i["summary"],
                     text_trimmed=trimmed,
+                    coverage_notice=m.get("coverage_notice"),
                     summary_blocks=summary_blocks(i["summary"]),
                     deadline=deadline,
                     expired=expired,
@@ -121,6 +122,7 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
             if len(g) > 1:
                 text += ["### " + i["title"]]
             text += [i["summary"]]
+            if m.get("coverage_notice"):text += [m["coverage_notice"]]
             if trimmed:
                 text += ["long email, it was trimmed"]
             if relative_notice:
@@ -136,8 +138,8 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
         from .thumbnail import screenshot
 
         original = lookup[g[0]]["message"]
-        from .image_assets import assets
-        image_entries = tuple(assets(original.get("original_html", ""), c).items())
+        from .image_assets import assets, source_config
+        image_entries = tuple(assets(original.get("original_html", ""), source_config(original,c), cache_only=c.get("image_loading",{}).get("mode")=="public_https").items())
         data = screenshot(original.get("original_html", ""), original.get("body", ""), image_entries)
         # Bind to this source/image and MIME message, never just its card position.
         binding = json.dumps([cid_namespace, original['id'], hashlib.sha256(data).hexdigest()])
@@ -181,6 +183,11 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
             "Original Gmail message ID: " + f["id"],
             "",
         ]
+    omissions = [{k:safe_text(str(v)) for k,v in entry.items() if k in ('id','subject','reason')} for entry in (skipped or [])]
+    if omissions:
+        text += ['## NOT INCLUDED — PROCESSING FAILED', 'These messages were skipped; their labels and read state are unchanged.', '']
+        for entry in omissions:
+            text += [entry.get('subject',''), 'Original Gmail message ID: '+entry['id'], 'Reason: '+entry['reason'], '']
     env = Environment(
         loader=PackageLoader("pubmail", "templates"),
         autoescape=select_autoescape(["html"]),
@@ -191,12 +198,13 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
         count=len(items) + len(flagged),
         cards=cards,
         suspicious=suspicious,
+        skipped=omissions,
     )
     return html, "\n".join(text), images
 
 
-def mime(c, items, groups, flagged, id):
-    h, t, images = render(c, items, groups, flagged, cid_namespace=id)
+def mime(c, items, groups, flagged, id, skipped=None):
+    h, t, images = render(c, items, groups, flagged, cid_namespace=id, skipped=skipped)
     n = c["newsletter"]
     msg = EmailMessage(policy=SMTP)
     msg["From"] = n["sender"]
@@ -233,6 +241,7 @@ def prepare(gmail, c, model, store):
     done = labels.get(c["labels"]["newsletter"])
     items = []
     flagged = []
+    skipped = []
     if ads:
         rows, more = gmail.search(
             f"label:{c['labels']['ads']} -label:{c['labels']['newsletter']} -in:spam -in:trash"
@@ -263,52 +272,66 @@ def prepare(gmail, c, model, store):
     for row in rows:
         if row["id"] in delivered:
             continue
-        m = normalize(gmail.raw(row["id"]), c["limits"]["body_characters"])
-        # Historical ads/review records remain untouched for explicit catch-up.
-        if live_after and m["timestamp"] < live_after:
-            continue
-        if done and done in m["labels"] or {"SPAM", "TRASH"} & set(m["labels"]):
-            continue
-        sec, reason, urls = security(m, c)
-        d = store.cached(m, c) or {
-            "title": m["subject"],
-            "summary": "Message awaiting review.",
-            "topic": m["subject"],
-            "deadline": None,
-        }
+        m = None
         try:
-            from .vision import enrich
-            m = enrich(m,c,reviewer=getattr(model,'reviewer',None)) if sec=='verified' else m
-            cache_key='summary:'+policy_hash(c)+':'+hashlib.sha256(json.dumps({'source':m['headers_hash'],'body':m['body'],'visual_evidence':m.get('visual_evidence')},sort_keys=True).encode()).hexdigest()
-            cached=store.db.execute('SELECT value FROM meta WHERE key=?',(cache_key,)).fetchone()
-            if cached:result=json.loads(cached[0])
-            else:
-                result = model.classify(m)
-                store.db.execute('INSERT OR REPLACE INTO meta VALUES(?,?)',(cache_key,json.dumps(result)));store.db.commit()
+            m = normalize(gmail.raw(row["id"]), c["limits"]["body_characters"])
+            # Historical ads/review records remain untouched for explicit catch-up.
+            if live_after and m["timestamp"] < live_after:
+                continue
+            if done and done in m["labels"] or {"SPAM", "TRASH"} & set(m["labels"]):
+                continue
+            sec, reason, urls = security(m, c)
+            d = store.cached(m, c) or {
+                "title": m["subject"],
+                "summary": "Message awaiting review.",
+                "topic": m["subject"],
+                "deadline": None,
+            }
+            try:
+                from .vision import enrich
+                m = enrich(m,c,reviewer=getattr(model,'reviewer',None)) if sec=='verified' else m
+                cache_key='summary:'+policy_hash(c)+':'+hashlib.sha256(json.dumps({'source':m['headers_hash'],'body':m['body'],'visual_evidence':m.get('visual_evidence')},sort_keys=True).encode()).hexdigest()
+                cached=store.db.execute('SELECT value FROM meta WHERE key=?',(cache_key,)).fetchone()
+                if cached:result=json.loads(cached[0])
+                else:
+                    result = model.classify(m)
+                    store.db.execute('INSERT OR REPLACE INTO meta VALUES(?,?)',(cache_key,json.dumps(result)));store.db.commit()
+                d.update(
+                    {
+                        k: result.get(k)
+                        for k in (
+                            "title",
+                            "summary",
+                            "topic",
+                            "deadline",
+                            "deadline_evidence",
+                            "deadline_date",
+                            "text_trimmed",
+                        )
+                    }
+                )
+            except ProcessingPending:
+                raise
+            except Error as exc:
+                # No false "digested" marking when summarization failed.
+                from .diagnostics import failure_details
+                details=failure_details(exc,'source_prepare')
+                reason=details['chain'][0]['message']
+                skipped.append({'id':m['id'],'subject':m['subject'],'reason':reason,'diagnostic':details})
+                continue
             d.update(
-                {
-                    k: result.get(k)
-                    for k in (
-                        "title",
-                        "summary",
-                        "topic",
-                        "deadline",
-                        "deadline_evidence",
-                        "deadline_date",
-                        "text_trimmed",
-                    )
-                }
+                id=m["id"], message=m, security=sec, security_reason=reason, safe_urls=urls
             )
+            render(c,[d] if sec=='verified' else [],[[d['id']]] if sec=='verified' else [],[d] if sec!='verified' else [])
+            (items if sec == "verified" else flagged).append(d)
         except ProcessingPending:
             raise
-        except Error:
-            # No false "digested" marking when summarization failed.
-            raise Error("Digest summarization failed; nothing sent or marked")
-        d.update(
-            id=m["id"], message=m, security=sec, security_reason=reason, safe_urls=urls
-        )
-        (items if sec == "verified" else flagged).append(d)
-    if not items and not flagged:
+        except Error as exc:
+            from .diagnostics import failure_details
+            details=failure_details(exc,'source_prepare')
+            skipped.append({'id':row['id'],'subject':m.get('subject','Source unavailable') if m else 'Source unavailable',
+                            'reason':details['chain'][0]['message'],'diagnostic':details})
+    if not items and not flagged and not skipped:
         return None
     # Sender grouping is deterministic in render; no semantic-model call needed.
     groups = [[i["id"]] for i in items]
@@ -318,14 +341,15 @@ def prepare(gmail, c, model, store):
         "items": items,
         "groups": groups,
         "flagged": flagged,
+        "skipped": skipped,
         "ids": [i["id"] for i in items + flagged],
     }
-    h, t, _ = render(c, items, groups, flagged, inline=True)
+    h, t, _ = render(c, items, groups, flagged, inline=True, skipped=skipped)
     private_write(store.root / "digests" / f"{id}.html", h)
     private_write(store.root / "digests" / f"{id}.txt", t)
     private_write(
         store.root / "digests" / f"{id}.eml",
-        mime(c, items, groups, flagged, id).as_string(),
+        mime(c, items, groups, flagged, id, skipped=skipped).as_string(),
     )
     p["mime_sha256"] = hashlib.sha256(
         (store.root / "digests" / f"{id}.eml").read_bytes()

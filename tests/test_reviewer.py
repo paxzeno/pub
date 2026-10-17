@@ -19,6 +19,24 @@ class ReviewerTests(unittest.TestCase):
     def response(self,*args,**kwargs):
         req=json.loads(kwargs['input'])
         return json.dumps({'version':1,'results':[{'id':i['id'],'status':'resolved','output':{'ok':True},'reason':'reviewed'} for i in req['items']]})
+    def test_validation_failure_isolated_and_recorded(self):
+        def reject(o):raise Error('Final review omitted source title')
+        with patch('pubmail.reviewer.run',side_effect=self.response):
+            out=self.q.exchange([self.task,dict(self.task,reason='other')],[reject,lambda o:None])
+        self.assertEqual(out,{1:{'ok':True}})
+        rows=self.store.db.execute("SELECT status,result FROM senior_items").fetchall()
+        self.assertEqual(sorted(s for s,r in rows),['failed','resolved'])
+        error=json.loads(next(r for s,r in rows if s=='failed'))['error']
+        self.assertEqual(error['stage'],'review_validation')
+        self.assertEqual(error['chain'][0]['message'],'Final review omitted source title')
+    def test_transport_failure_diagnostic_private_and_not_retried(self):
+        with patch('pubmail.reviewer.run',side_effect=Error('SECRET')) as call:
+            self.q.exchange([self.task],[lambda o:None])
+            self.q.exchange([self.task],[lambda o:None])
+        self.assertEqual(call.call_count,1)
+        result=self.store.db.execute('SELECT result FROM senior_items').fetchone()[0]
+        self.assertNotIn('SECRET',result)
+        self.assertEqual(json.loads(result)['error']['stage'],'review_transport_or_contract')
     def test_batch_and_dedup(self):
         with patch('pubmail.reviewer.run',side_effect=self.response) as call:
             tasks=[self.task,dict(self.task,reason='low_confidence')]

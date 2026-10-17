@@ -33,6 +33,6 @@ def main():
 
 if __name__=='__main__':
     try: main()
-    except Exception:
-        print('OpenClaw reviewer adapter failed; details suppressed for privacy',file=sys.stderr)
-        raise SystemExit(1)
+    except Exception as exc:
+        from .diagnostics import failure_details
+        print(json.dumps({'version':1,'adapter_error':failure_details(exc,'openclaw_adapter')}))

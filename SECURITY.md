@@ -106,3 +106,26 @@ Prompt restrictions are not a sandbox: deploy the reviewer with appropriate tool
 permissions. Email text cannot choose notification commands, destinations or trust
 rules. Notifications contain only private event references; adapters and filesystem
 state must retain the same confidentiality as the source mail.
+
+
+### Text-first image processing (owner-directed, supersedes image-location investigations)
+`image_loading.mode: public_https` uses authenticated source text/alt text first,
+with literal-evidence-checked local sufficiency decisions and explicit coverage
+notices. It does not investigate CDN ownership or require filename extensions or
+public-site copies of campaign artwork. Scoped mode remains available for legacy
+deployments. The public sample remains opt-in.
+When needed, fetch only HTML img sources over validated public, DNS-pinned HTTPS;
+never follow redirects or send cookies/auth/referer. Exclude known trackers and
+tiny declared images. Queries may identify recipients: remote fetching is not
+tracking-free. Validate bytes, not response MIME or filename.
+Decode through the locally built `pubmail-image-decoder:1` Docker image
+(`docker build -t pubmail-image-decoder:1 sandbox/image-decoder`). The decoder has
+no network, host mounts, credentials, capabilities or writable root; runs as UID
+65534 with memory/PID/CPU/time limits and accepts bounded raster input only.
+Missing Docker/image fails closed for decoding; never fall back to in-process
+untrusted decoding. Browser rendering remains offline and uses cached raster
+assets only in this mode. A failed decorative asset does not discard available
+evidence. Text-only/partial-artwork coverage is disclosed, never claimed complete.
+Senior review handles content uncertainty, not image-host permission decisions.
+Unresolved essential content remains skipped and unlabelled. Prove changes against
+a private source snapshot with preparation/final review only before a live send.

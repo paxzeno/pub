@@ -1,6 +1,7 @@
 """Durable scheduled orchestration. No policy changes or blind invocation retries."""
 from __future__ import annotations
-import hashlib, json, os, time
+import hashlib, json, os, time, logging
+from .diagnostics import failure_details
 from pathlib import Path
 from .io import Error, ProcessingPending, policy_hash, private_write, run
 
@@ -39,22 +40,39 @@ def save(store,name,state,body):
 def notify(c,store,name,kind,review_ids=()):
     """Private event file + metadata-only argv. Failed/ambiguous notices are visible, never spammed."""
     job=store.db.execute('SELECT body FROM automation_jobs WHERE name=?',(name,)).fetchone()
-    generation=json.loads(job[0]).get('started',0) if job else int(time.time()//3600)
+    generation=0 if name in ('review_resolution_v1','image_resolution_v1') else (json.loads(job[0]).get('started',0) if job else int(time.time()//3600))
     event={'version':1,'job':name,'generation':generation,'kind':kind,'review_ids':list(review_ids),'state_dir':str(store.root)}
     ident=hashlib.sha256(json.dumps(event,sort_keys=True).encode()).hexdigest()
-    if store.db.execute('SELECT 1 FROM automation_events WHERE id=?',(ident,)).fetchone():return
+    prior=store.db.execute('SELECT body FROM automation_events WHERE id=?',(ident,)).fetchone()
+    if prior:return json.loads(prior[0]).get('handoff_receipt')
     event['id']=ident
+    if kind=='workflow_blocked' and job:
+        error=json.loads(job[0]).get('last_error')
+        if error:event['error']=error
     file=store.root/'automation'/(ident+'.json');private_write(file,json.dumps(event))
     store.db.execute('INSERT INTO automation_events VALUES(?,?,?)',(ident,'sending',json.dumps(event)));store.db.commit()
     audience='owner' if kind=='needs_owner' else 'senior'
     try:
-        run([os.path.expanduser(x) for x in c['automation'][audience+'_notify_argv']],
+        raw=run([os.path.expanduser(x) for x in c['automation'][audience+'_notify_argv']],
             input=json.dumps({'version':1,'event_id':ident,'event_file':str(file),'audience':audience}),
             env={**os.environ,**{k:os.path.expanduser(v) for k,v in c['automation'].get('notify_env',{}).items()}},
             timeout=c['automation'].get('notify_timeout_seconds',30))
-        status='notified'
-    except Error:status='failed'
+        receipt=json.loads(raw)
+        if (receipt.get('event_id')!=ident or receipt.get('status')!='acknowledged' or receipt.get('review_ids')!=list(review_ids)
+            or not isinstance(receipt.get('report'),str) or not 1<=len(receipt['report'].strip())<=24000):
+            raise Error('Senior handoff acknowledgement missing')
+        event['handoff_receipt']=receipt
+        private_write(file,json.dumps(event))
+        store.db.execute('UPDATE automation_events SET body=? WHERE id=?',(json.dumps(event),ident))
+        status='acknowledged'
+    except (Error,ValueError,TypeError,AttributeError) as exc:
+        status='failed'
+        event['notification_error']=failure_details(exc,'notification')
+        private_write(file,json.dumps(event))
+        store.db.execute('UPDATE automation_events SET body=? WHERE id=?',(json.dumps(event),ident))
+        logging.getLogger(__name__).error('Notification failed: %s',json.dumps(event['notification_error']))
     store.db.execute('UPDATE automation_events SET status=? WHERE id=?',(status,ident));store.db.commit()
+    return event.get('handoff_receipt')
 
 
 def surface_reviews(c,store,name):
@@ -73,34 +91,55 @@ def run_weekly(gmail,c,model,store,start=True):
     if not row and not start:return {'status':'idle'}
     if row and row[0]=='blocked':
         surface_reviews(c,store,'weekly')
-        return {'status':'blocked','job':'weekly'}
+        return blocked_result(json.loads(row[1]))
     p=json.loads(row[1]) if row and row[0]!='complete' else {'policy':policy_hash(c),'started':time.time()}
+    stage='preflight'
     try:
         if p['policy']!=policy_hash(c):raise Error('Policy changed during workflow; explicit restart required')
         # Recovery of accepted SMTP only finishes labels. Ambiguous sends never repeat.
         if p.get('digest'):
             status=store.db.execute('SELECT status,body FROM deliveries WHERE id=?',(p['digest'],)).fetchone()
-            if status and status[0]=='preview':final_review(c,model,store,p['digest'])
+            if status and status[0]=='preview':
+                stage='final_review'
+                final_review(c,model,store,p['digest'])
+            stage='delivery'
             result=digest.send(gmail,c,store,p['digest'])
         else:
             if store.db.execute("SELECT 1 FROM deliveries WHERE status IN ('sending','ambiguous','sent')").fetchone():
                 raise Error('Prior delivery requires reconciliation')
             save(store,'weekly','preparing',p)
+            stage='prepare'
             prepared=digest.prepare(gmail,c,model,store)
             if not prepared:
                 save(store,'weekly','complete',p);return {'status':'empty'}
             p['digest']=prepared['id'];save(store,'weekly','reviewing',p)
+            stage='final_review'
             final_review(c,model,store,prepared['id'])
             save(store,'weekly','ready',p)
+            stage='delivery'
             result=digest.send(gmail,c,store,p['digest'])
         save(store,'weekly','complete',p);return result
     except ProcessingPending:
         save(store,'weekly','pending',p)
         return {'status':'pending','job':'weekly'}
-    except Error:
+    except Exception as exc:
+        p['last_error']=failure_details(exc,stage)
+        logging.getLogger(__name__).error('Weekly workflow blocked: %s',json.dumps(p['last_error']))
         save(store,'weekly','blocked',p)
         surface_reviews(c,store,'weekly');notify(c,store,'weekly','workflow_blocked')
-        return {'status':'blocked','job':'weekly'}
+        return blocked_result(p)
+
+
+def blocked_result(body):
+    return {'status':'blocked','job':'weekly',
+            'error':body.get('last_error',{'message':'Legacy blocked job: no diagnostic was recorded'}),
+            'next_action':'Inspect automation-status; repair cause, then automation-retry weekly. Do not reset delivery or review state.'}
+
+
+def job_errors(store):
+    return {name:json.loads(body).get('last_error',
+                {'message':'Legacy blocked job: no diagnostic was recorded'} if state=='blocked' else None)
+            for name,state,body in store.db.execute('SELECT name,state,body FROM automation_jobs')}
 
 
 def retry(c,store,name):
@@ -164,17 +203,32 @@ def final_review(c,model,store,ident):
               'data':{'summary_profile':next((v for v in c.get('summary_profiles',[]) if v.get('sender')==source.get('original_sender',source['sender'])),{}),'source':source,'proposed':{k:i.get(k) for k in ('title','summary','topic','deadline','deadline_date','deadline_evidence')},'source_hash':i['message']['headers_hash']}}
         tasks.append(task)
         validators.append(lambda o,m=source: validate_final(c,o,m,model.local))
-    outputs=model.reviewer.exchange(tasks,validators)
-    if len(outputs)!=len(tasks):
-        statuses=[model.reviewer.store.db.execute('SELECT status FROM senior_items WHERE id=?',(i,)).fetchone()[0] for i in model.reviewer.last_ids]
-        if all(v in ('resolved','pending') for v in statuses):raise ProcessingPending('Final review batches pending')
-        raise Error('Final content review incomplete')
+    outputs=model.reviewer.exchange(tasks,validators,isolate_errors=True)
+    rejected=set()
     for n,i in enumerate(all_items):
-        approved=validators[n](outputs[n])
-        i.update({k:approved.get(k) for k in ('title','summary','topic','deadline','deadline_date','deadline_evidence','text_trimmed')})
-    h,t,_=render(c,p['items'],p['groups'],p['flagged'],inline=True)
+        try:
+            if n not in outputs:
+                review_id=model.reviewer.last_ids[n]
+                row=store.db.execute('SELECT status FROM senior_items WHERE id=?',(review_id,)).fetchone()
+                if row and row[0]=='pending':raise ProcessingPending('Final review batches pending')
+                raise Error('Final content review incomplete')
+            approved=validators[n](outputs[n])
+            i.update({k:approved.get(k) for k in ('title','summary','topic','deadline','deadline_date','deadline_evidence','text_trimmed')})
+        except ProcessingPending:
+            raise
+        except Error as exc:
+            details=failure_details(exc,'source_final_review')
+            p.setdefault('skipped',[]).append({'id':i['id'],'subject':i['message']['subject'],
+                                             'reason':details['chain'][0]['message'],'diagnostic':details})
+            rejected.add(i['id'])
+    p['items']=[i for i in p['items'] if i['id'] not in rejected]
+    p['flagged']=[i for i in p['flagged'] if i['id'] not in rejected]
+    p['groups']=[[i['id']] for i in p['items']]
+    p['ids']=[i['id'] for i in p['items']+p['flagged']]
+    all_items=p['items']+p['flagged']
+    h,t,_=render(c,p['items'],p['groups'],p['flagged'],inline=True,skipped=p.get('skipped'))
     private_write(store.root/'digests'/(ident+'.html'),h);private_write(store.root/'digests'/(ident+'.txt'),t)
-    private_write(file,mime(c,p['items'],p['groups'],p['flagged'],ident).as_string())
+    private_write(file,mime(c,p['items'],p['groups'],p['flagged'],ident,skipped=p.get('skipped')).as_string())
     p['mime_sha256']=hashlib.sha256(file.read_bytes()).hexdigest()
     p['final_review']={'policy':policy_hash(c),'mime_sha256':p['mime_sha256'],
                        'sources':{i['id']:i['message']['headers_hash'] for i in all_items},
@@ -224,6 +278,7 @@ def smoke_test(c):
         cfg['state_dir']=root
         cfg['vision']['enabled']=False;cfg['image_loading']['enabled']=False
         cfg['summary_profiles']=[];cfg['account']='reader@example.com'
+        cfg['rollout']['live_after']=0
         cfg['newsletter'].update(sender='editor@example.com',recipient='reader@example.com')
         cfg['security_exceptions']=[];cfg['alias_domains']=[]
         s=Store(cfg)
@@ -243,6 +298,7 @@ def smoke_test(c):
             m.classify=proposed
             p=digest.prepare(Fixture(),cfg,m,s)
             reviewed=final_review(cfg,m,s,p['id'])
+            if not reviewed['items']:raise Error('Final reviewer probe produced no approved source; inspect handoff diagnostics')
             text=reviewed['items'][0]['summary']
             if '9' not in text or 'new' not in text.lower():raise Error('Final reviewer missed renewal/eligibility evidence')
             from PIL import Image,ImageDraw,ImageFont

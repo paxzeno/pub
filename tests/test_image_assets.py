@@ -53,3 +53,29 @@ class ImageAssets(unittest.TestCase):
         self.assertEqual(result.size,(108,64))
         self.assertEqual(result.getpixel((0,0)),(255,0,0))
         self.assertEqual(result.getpixel((0,63)),(255,255,255))
+
+    def test_sender_bound_folder_and_new_filenames(self):
+        from pubmail.image_assets import source_config
+        c={'image_loading':{'enabled':True,'hosts':{},'sender_hosts':{'sender@brand.example':{'cdn.example.com':{'path_prefixes':['/brand/images/'],'query_keys':[]}}}}}
+        m={'original_sender':'sender@brand.example'}
+        with patch('pubmail.core.security',return_value=('verified','',[])):
+            p=source_config(m,c)['image_loading']
+        self.assertTrue(eligible('https://cdn.example.com/brand/images/new/2027.png',p))
+        for url in ['https://cdn.example.com/other/x.png','https://cdn.example.com/brand/images/../x.png','https://cdn.example.com/brand/images/x.png?token=abc']:
+            self.assertFalse(eligible(url,p))
+        self.assertFalse(eligible('https://cdn.example.com/brand/images/x.png',source_config({'original_sender':'other@brand.example'},c)['image_loading']))
+        with patch('pubmail.core.security',return_value=('uncertain','',[])):
+            self.assertEqual(source_config(m,c)['image_loading']['hosts'],{})
+
+    def test_rejected_locations_exclude_trackers_and_query_values(self):
+        from pubmail.image_assets import missing_locations
+        c={'image_loading':{'enabled':True,'hosts':{}},'ignored_tracking_domains':['track.example.com']}
+        out=missing_locations('<img src="https://new.example.com/image.png?token=secret"><img src="https://track.example.com/pixel"><img width="1" src="https://other.example.com/pixel">',c)
+        self.assertEqual(len(out),1);self.assertEqual(out[0]['reason'],'unknown_host')
+        self.assertNotIn('secret',str(out));self.assertEqual(out[0]['query_keys'],['token'])
+
+    def test_timestamp_query_is_explicit_and_bounded(self):
+        p={'enabled':True,'hosts':{'cdn.example.com':{'path_prefixes':['/brand/'],'allow_timestamp_query':True}}}
+        self.assertTrue(eligible('https://cdn.example.com/brand/a.png?1772639916',p))
+        for query in ['token=secret','1772639916&token=secret','123','a1772639916']:
+            self.assertFalse(eligible('https://cdn.example.com/brand/a.png?'+query,p))
