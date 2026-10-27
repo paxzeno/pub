@@ -28,6 +28,37 @@ def skipped_identity(m, verified):
             "thread_id": m.get("thread_id"), "rfc_message_id": m.get("rfc_message_id", "")}
 
 
+def sender_identity(m):
+    address = m.get("original_sender") or m.get("sender", "")
+    display = m.get("sender_display", "").strip()
+    # A relay display name is not proof of the original sender's identity.
+    route = m.get("sender", "")
+    if route and route != address:
+        return f"{display + ' ' if display else ''}<{route}>; claimed original: {address}"
+    return f"{display} <{address}>" if display else address
+
+
+def source_urls(m, inactive=False):
+    """Actual supplied targets, never anchor labels or resolved destinations."""
+    urls = list(dict.fromkeys(m.get("links", []) + m.get("unsubscribe", [])))
+    if inactive:
+        # Reversible notation preserves schemes, path, query and fragment.
+        return [u.replace(":", "[:]").replace(".", "[.]").replace("@", "[at]") for u in urls]
+    return urls
+
+
+def source_notice(m, c):
+    """Deterministic reading copy, NOT a reviewed summary or delivery approval."""
+    if not m:
+        return {}
+    from .text_input import bounded_message
+    source = bounded_message(m.get("reading_source", m), c)
+    return {"source_hash": m["headers_hash"], "source_excerpt": source.get("body", ""),
+            "source_trimmed": bool(source.get("text_trimmed") or source.get("truncated")),
+            "source_sender": sender_identity(m), "source_urls": source_urls(m, True),
+            "source_concern": m.get("reading_concern", "")}
+
+
 def summary_blocks(summary):
     """Email-safe list structure; no dependence on CSS whitespace preservation."""
     import re
@@ -115,6 +146,7 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
             entries.append(
                 dict(
                     title=i["title"],
+                    subject=m["subject"],
                     summary=i["summary"],
                     text_trimmed=trimmed,
                     coverage_notice=m.get("coverage_notice"),
@@ -125,7 +157,8 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
                     event_status=event_status,
                     event_display=event_display,
                     relative_notice=relative_notice,
-                    sender=m["original_sender"],
+                    sender=sender_identity(m),
+                    source_urls=source_urls(m),
                     received=datetime.fromtimestamp(m["timestamp"], ZoneInfo(c["timezone"])).strftime("%Y-%m-%d %H:%M:%S"),
                     original_url=original,
                     unsubscribe=unsub,
@@ -133,7 +166,7 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
             )
             if len(g) > 1:
                 text += ["### " + i["title"]]
-            text += [i["summary"]]
+            text += ["Subject: " + m["subject"], "Summary of sender content (not endorsement):", i["summary"]]
             if m.get("coverage_notice"):text += [m["coverage_notice"]]
             if trimmed:
                 text += ["long email, it was trimmed"]
@@ -143,7 +176,8 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
                 text += ["EVENT " + event_status + ": " + event_display]
             if deadline:
                 text += [("EXPIRED" if expired else "DEADLINE") + ": " + display]
-            text += ["From: " + m["original_sender"], "Date: " + datetime.fromtimestamp(m["timestamp"], ZoneInfo(c["timezone"])).strftime("%Y-%m-%d %H:%M:%S"), "Original: " + original]
+            text += ["From: " + sender_identity(m), "Date: " + datetime.fromtimestamp(m["timestamp"], ZoneInfo(c["timezone"])).strftime("%Y-%m-%d %H:%M:%S"), "Original: " + original]
+            text += ["Sender-provided URLs (not visited; redirect destinations unknown):", *source_urls(m)]
             if unsub:
                 text += ["Unsubscribe: " + unsub]
             text += [""]
@@ -174,10 +208,11 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
         from .text_input import bounded_message
         m = bounded_message(i["message"], c)
         f = dict(
-            title=safe_text(i["title"]),
+            title=safe_text(m["subject"]),
             summary=safe_text(i["summary"]),
             text_trimmed=bool(i.get("text_trimmed") or m.get("text_trimmed")),
-            sender=safe_text(m["original_sender"]),
+            sender=safe_text(sender_identity(m)),
+            source_urls=source_urls(m, True),
             received=datetime.fromtimestamp(
                 m["timestamp"], ZoneInfo(c["timezone"])
             ).strftime("%Y-%m-%d %H:%M:%S"),
@@ -192,6 +227,8 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
             "From: " + f["sender"],
             "Date: " + f["received"],
             "Reason: " + f["reason"],
+            "Sender-provided URLs (inactive notation; not visited):",
+            *f["source_urls"],
             "Original Gmail message ID: " + f["id"],
             "",
         ]
@@ -201,13 +238,25 @@ def render(c, items, groups, flagged, now=None, inline=False, cid_namespace=None
         if entry.get('security') == 'verified' and entry.get('sender'):
             notice['sender'] = entry['sender']
             notice['original_url'] = original_email_url(c, entry)
+        if 'source_excerpt' in entry:
+            notice.update(source_excerpt=safe_text(entry['source_excerpt']),
+                          source_sender=safe_text(entry['source_sender']),
+                          source_urls=entry['source_urls'], source_trimmed=entry['source_trimmed'],
+                          source_concern=safe_text(entry.get('source_concern','')))
         omissions.append(notice)
     if omissions:
-        text += ['## NOT INCLUDED — PROCESSING FAILED', 'These messages were skipped; their labels and read state are unchanged.', '']
+        text += ['## SOURCE COPIES / PROCESSING NOTICES', 'Source copies are sender claims, not reviewed summaries or endorsements. Labels and read state are unchanged.', '']
         for entry in omissions:
             text += [entry.get('subject','')]
             if entry.get('sender'):
                 text += ['From: '+entry['sender'], 'Open original email: '+entry['original_url']]
+            if 'source_excerpt' in entry:
+                text += ['From: '+entry['source_sender'], *(['Concern: '+entry['source_concern']] if entry['source_concern'] else []), 'Sender content — unreviewed text excerpt:',
+                         entry['source_excerpt'] or '[No readable text; inspect original email.]',
+                         'Text excerpt only; images and attachments are not reproduced.',
+                         *(['long email, it was trimmed'] if entry['source_trimmed'] else []),
+                         'Actual URLs (inactive notation: [:], [.], [at]; not visited; redirect destinations unknown):',
+                         *entry['source_urls']]
             text += ['Original Gmail message ID: '+entry['id'], 'Reason: '+entry['reason'], '']
     env = Environment(
         loader=PackageLoader("pubmail", "templates"),
@@ -302,7 +351,9 @@ def prepare(gmail, c, model, store):
                 continue
             if done and done in m["labels"] or {"SPAM", "TRASH"} & set(m["labels"]):
                 continue
+            m["reading_source"] = dict(m)
             sec, reason, urls = security(m, c)
+            m["reading_concern"] = reason if sec != "verified" else ""
             d = store.cached(m, c) or {
                 "title": m["subject"],
                 "summary": "Message awaiting review.",
@@ -339,7 +390,7 @@ def prepare(gmail, c, model, store):
                 from .diagnostics import failure_details
                 details=failure_details(exc,'source_prepare')
                 reason=details['chain'][0]['message']
-                skipped.append({'id':m['id'],'subject':m['subject'],'reason':reason,'diagnostic':details, **skipped_identity(m, sec=='verified')})
+                skipped.append({'id':m['id'],'subject':m['subject'],'reason':reason,'diagnostic':details, **skipped_identity(m, sec=='verified'), **source_notice(m,c)})
                 continue
             d.update(
                 id=m["id"], message=m, security=sec, security_reason=reason, safe_urls=urls
@@ -352,7 +403,7 @@ def prepare(gmail, c, model, store):
             from .diagnostics import failure_details
             details=failure_details(exc,'source_prepare')
             skipped.append({'id':row['id'],'subject':m.get('subject','Source unavailable') if m else 'Source unavailable',
-                            'reason':details['chain'][0]['message'],'diagnostic':details, **skipped_identity(m, sec=='verified')})
+                            'reason':details['chain'][0]['message'],'diagnostic':details, **skipped_identity(m, sec=='verified'), **source_notice(m,c)})
     if not items and not flagged and not skipped:
         return None
     # Sender grouping is deterministic in render; no semantic-model call needed.
@@ -434,6 +485,11 @@ def send(gmail, c, store, id):
             or m["headers_hash"] != i["message"]["headers_hash"]
         ):
             raise Error("Digest source changed or already included; regenerate preview")
+    for notice in p.get("skipped", []):
+        if notice.get("source_hash"):
+            current = normalize(gmail.raw(notice["id"]), c["limits"]["body_characters"])
+            if current["headers_hash"] != notice["source_hash"] or {"SPAM", "TRASH"} & set(current["labels"]):
+                raise Error("Reading-copy source changed; regenerate preview")
     file = store.root / "digests" / f"{id}.eml"
     if hashlib.sha256(file.read_bytes()).hexdigest() != p["mime_sha256"]:
         raise Error("Preview MIME changed; regenerate")

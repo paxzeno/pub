@@ -720,3 +720,69 @@ and final review in separate state, and explicitly disables send/mutation method
 Inspect `result.json`, the generated HTML and source evidence before delivery.
 The proof receipt is not portable to another state/configuration: a live run still
 performs its own source/policy/MIME-bound review and normal delivery safeguards.
+
+
+### Attributed reading copies (owner-directed)
+Newsletter inclusion is not endorsement or an action on an offer. Show the actual
+sender-provided URL targets, not anchor labels; do not resolve redirects or visit
+these links. Display sender name/address, distinguishing a relay's From from its
+claimed original. Existing classification, archive and delivery gates are unchanged.
+When preparation or final review cannot approve a source, provide a deterministic,
+escaped text excerpt instead of hiding all its content. Clearly identify it as
+unreviewed sender content, disclose trimming and missing images/attachments, and
+retain the processing concern. Unavailable sources still get a notice only.
+Reading copies and flagged entries expose targets in reversible inactive notation
+(`[:]`, `[.]`, `[at]`), never active sender links or source HTML. Their appearance
+confers no permission to fetch, act or trust. Reading copies stay outside delivery
+label transitions and remain pending; recheck their source fingerprint before send.
+Private preview URLs can contain recipient identifiers and must not be published.
+
+
+### Scheduled recovery and OAuth repair
+Hourly work is held on Fridays from 10:00 through 12:59 in the configured IANA
+timezone (deployed timers use Europe/Lisbon). Resume runs at minutes 02, 07, etc.
+Lock contention exits 75; installed services retry that status after 60 seconds,
+not arbitrary failures. Weekly automation writes an owner-only ISO-week request
+marker before taking the pipeline lock. Resume imports it transactionally and
+retains blocked/in-flight jobs; duplicate requests for the completed week do not
+resend. `automation-status` includes queued weekly requests. Legacy non-automation
+weekly mode retains its original behavior. No historical missed week is queued
+merely by installing this update.
+
+Structured gog `auth_required` failures output a private, temporary Google OAuth
+URL from gog's real remote step-1 handshake. `pubmail auth-recover` prints the URL
+again (cached for 50 minutes against a one-hour handshake). Keep it and callback
+URLs private. Complete gog remote step 2 locally using the same account/client;
+never put callback codes in shared chat. The current gog scope flags are
+`--services gmail --gmail-scope readonly --extra-scopes https://www.googleapis.com/auth/gmail.modify`.
+No token exchange, mailbox operation or resend occurs just from generating the URL.
+Diagnostics retain a safe OAuth-required category, not raw provider stderr.
+`deploy/install.py --reload-only` updates installed units without starting jobs.
+
+
+### Owner-reviewed marketing rules
+Advertising rules remain exact-sender plus subject regex, with optional body_regex.
+`promotional_phrases` contains reviewed literal marketing boilerplate only (15–500
+characters per phrase). On matching rules, whitespace-normalized full body text
+may ignore those exact phrases for keyword protection. Subject protection,
+truncated/unknown coverage, whitelists and any remaining protected phrase still
+win. Never add bare protected keywords or blanket sender overrides. Authentication
+and link checks remain mandatory; no automatic learning from label changes.
+`link_policy.omitted_malformed_hosts` maps exact sender addresses to exact hosts:
+only ordinary HTTPS authorities without credentials/unusual ports can be omitted.
+These URLs are discarded, never repaired, fetched or returned as safe links.
+Private sender rules, source examples, provenance and replay reports stay outside Git.
+
+
+### Failed image extraction checkpoints
+In public_https mode, exhausted two-attempt image extraction writes a private
+`vision-cache/failures/<key>.json` unavailable record. Keys bind image bytes, model
+configuration and extraction contract, as successful evidence does. Resumes skip
+these failures without consuming the pass budget; they never become evidence.
+Coverage explicitly counts unavailable images; insufficient content still uses the
+existing source failure/reading-copy path. Scoped-mode senior review behavior is
+unchanged. Valid cached evidence or a validated senior correction takes precedence.
+Use `pubmail image-retry <64-character-key>` or `pubmail image-retry all` to explicitly
+archive failed records into failure-history under the pipeline lock. This enables a
+future attempt only: it does not start a run, reset senior attempts or send mail.
+No provider error text is written to failure records.

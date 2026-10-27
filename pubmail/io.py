@@ -8,6 +8,14 @@ class Error(RuntimeError):
     pass
 
 
+class LockBusy(Error):
+    pass
+
+
+class GmailAuthRequired(Error):
+    pass
+
+
 class ProcessingPending(Error):
     """A bounded image pass saved progress; rerun the same input to resume."""
     pass
@@ -21,6 +29,13 @@ def run(argv, *, env=None, input=None, timeout=90):
     except (OSError, subprocess.TimeoutExpired) as e:
         raise Error(f"{argv[0]} unavailable or timed out") from e
     if r.returncode:
+        if Path(argv[0]).name == 'gog':
+            try:
+                auth_error = json.loads(r.stdout).get('error', {})
+            except (ValueError, AttributeError):
+                auth_error = {}
+            if isinstance(auth_error, dict) and auth_error.get('class') == 'auth_required':
+                raise GmailAuthRequired('Gmail OAuth expired or revoked; reauthorization required')
         exc=Error(f"{argv[0]} failed; output suppressed to protect mail/credentials")
         exc.returncode=r.returncode
         raise exc
@@ -52,6 +67,19 @@ def load_config(path):
     ):
         if key not in c:
             raise Error(f"Missing config key: {key}")
+    import re
+    for rule in c.get('advertising', []):
+        try:
+            re.compile(rule['subject_regex'])
+            if rule.get('body_regex'): re.compile(rule['body_regex'])
+        except (KeyError, TypeError, re.error):
+            raise Error('Invalid advertising rule') from None
+        phrases = rule.get('promotional_phrases', [])
+        if not isinstance(phrases, list) or any(not isinstance(p, str) or len(p) < 15 or len(p) > 500 for p in phrases):
+            raise Error('Promotional phrases must be reviewed literal phrases of 15–500 characters')
+    malformed = c.get('link_policy', {}).get('omitted_malformed_hosts', {})
+    if not isinstance(malformed, dict) or any('@' not in sender or not isinstance(hosts, list) or any(not isinstance(h, str) or not re.fullmatch(r'[a-z0-9.-]+\.[a-z]{2,}', h) for h in hosts) for sender, hosts in malformed.items()):
+        raise Error('Malformed-link omissions require exact sender and host lists')
     ignored = c.get("ignored_tracking_domains", [])
     suffixes = c.get("ignored_tracking_domain_suffixes", [])
     if not isinstance(ignored, list) or not isinstance(suffixes, list):
@@ -148,7 +176,8 @@ class Store:
         try:
             fcntl.flock(self.lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
-            raise Error("Another run holds the lock")
+            self.lock.close()
+            raise LockBusy("Another run holds the lock; scheduled retry retained")
         self.db = sqlite3.connect(root / "state.sqlite3")
         self.db.executescript("""
         CREATE TABLE IF NOT EXISTS plans(id TEXT PRIMARY KEY, digest TEXT, body TEXT);
@@ -201,19 +230,28 @@ class Gmail:
                 ):
                     raise Error("Credential command must be an argv array")
                 self.env["GOG_KEYRING_PASSWORD"] = run(cmd).rstrip("\r\n")
-        result = run(
-            [
-                "gog",
-                "--account",
-                self.c["account"],
-                "--client",
-                self.c["client"],
-                "--json",
-                "--no-input",
-                *args,
-            ],
-            env=self.env,
-        )
+        try:
+            result = run(
+                [
+                    "gog",
+                    "--account",
+                    self.c["account"],
+                    "--client",
+                    self.c["client"],
+                    "--json",
+                    "--no-input",
+                    *args,
+                ],
+                env=self.env,
+            )
+        except GmailAuthRequired:
+            from .oauth import recovery_url
+            try:
+                url = recovery_url(self.c, self.env)
+                print('Gmail OAuth recovery (private, temporary): ' + url, file=__import__('sys').stderr)
+            except Error:
+                print('Gmail OAuth recovery link unavailable; run pubmail auth-recover locally.', file=__import__('sys').stderr)
+            raise
         return json.loads(result) if result.strip() else {}
 
     def search(self, q, limit=200):

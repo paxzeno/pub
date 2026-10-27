@@ -6,6 +6,7 @@ import re
 # Only exact, application-owned messages are safe for journals and status output.
 # Unknown/provider exceptions still expose their type and code locations, not payloads.
 SAFE_MESSAGES = frozenset({
+    "Gmail OAuth expired or revoked; reauthorization required",
     "Source text and readable images do not support a useful summary",
     'Invalid synchronous correction',
     'Senior image decision did not cover all locations',

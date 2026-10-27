@@ -50,6 +50,7 @@
   <div{% if not loop.first %} style="border-top:1px solid #e7e8e2;padding-top:24px;margin-top:24px"{% endif %}>
     {% if card.sources > 1 %}<h3 style="font-size:20px;line-height:1.4;margin:0 0 12px">{{ item.title }}</h3>{% endif %}
     <p style="font-size:14px;line-height:1.6;color:#62665d;margin:0 0 10px;overflow-wrap:anywhere;word-break:break-word">From: {{ item.sender }}<br>Date: {{ item.received }}</p>
+    <p>Subject: {{ item.subject }}</p><p>Summary of sender content — not endorsement.</p>
     {% for block in item.summary_blocks %}
     {% if block.bullet %}
     <p style="font-size:17px;line-height:1.7;margin:0 0 16px;overflow-wrap:anywhere">{% if block.title %}<strong>&#8226;&nbsp;{{ block.title }}</strong><br>{{ block.text }}{% else %}&#8226;&nbsp;{{ block.text }}{% endif %}</p>
@@ -64,6 +65,8 @@
     {% if item.deadline %}
     <p style="font-size:14px;line-height:1.6;font-weight:bold;margin:0 0 18px;padding:10px 12px;border-radius:0 8px 8px 0;border-left:3px solid {% if item.expired %}#a92932{% else %}#4b5a2d{% endif %};background:{% if item.expired %}#fff1f1{% else %}#f0f5e5{% endif %};color:{% if item.expired %}#a92932{% else %}#4b5a2d{% endif %}">{% if item.expired %}EXPIRED{% else %}DEADLINE{% endif %}<br>{{ item.deadline_display }}</p>
     {% endif %}
+    <p>Sender-provided URLs — not visited; redirect destinations unknown:</p>
+    {% for url in item.source_urls %}<p style="overflow-wrap:anywhere"><code>{{ url }}</code></p>{% endfor %}
     <div style="font-size:15px;line-height:1.4">
       <a class="action" href="{{ item.original_url }}" style="display:inline-block;padding:12px 16px;min-height:20px;margin:0 8px 8px 0;border:1px solid #20221f;border-radius:28px;background:#20221f;color:#fff;text-decoration:none;font-weight:bold">Read original email</a>
       {% if item.unsubscribe %}<a class="action" href="{{ item.unsubscribe }}" style="display:inline-block;padding:12px 16px;min-height:20px;margin:0 0 8px;border:1px solid #fff;border-radius:28px;color:#52594b;text-decoration:underline">Unsubscribe</a>{% endif %}
@@ -77,7 +80,7 @@
 <tr><td class="panel" style="padding:28px 32px;background:#f8f3e8;border:1px solid #ded4bc;border-radius:16px;border-top:4px solid #a8792c;overflow-wrap:anywhere;word-wrap:break-word">
   <p style="font-size:13px;line-height:1.5;letter-spacing:2px;color:#76541e;margin:0 0 12px;font-weight:bold">REVIEW DESK</p>
   <h2 style="font-family:Arial,Helvetica,sans-serif;font-size:26px;line-height:1.3;font-weight:bold;letter-spacing:-0.5px;margin:0 0 16px">Set aside for your review</h2>
-  <p style="font-size:16px;line-height:1.7;margin:0 0 20px">Sender or link verification needs attention. These messages remain in your inbox. No images or active links are included here.</p>
+  <p style="font-size:16px;line-height:1.7;margin:0 0 20px">Sender or link verification needs attention. Inclusion is not endorsement. No images or active links are included here.</p>
   {% for item in suspicious %}
   <div style="border-top:1px solid #dfcaa6;padding-top:20px;margin-top:20px;overflow-wrap:anywhere;word-break:break-word">
     <h3 style="font-size:18px;line-height:1.5;margin:0 0 12px">{{ item.title }}</h3>
@@ -86,6 +89,8 @@
     <p style="font-size:14px;line-height:1.7;margin:0 0 10px">From: {{ item.sender }}</p>
     <p style="font-size:14px;line-height:1.7;margin:0 0 10px">Date: {{ item.received }}</p>
     <p style="font-size:14px;line-height:1.7;margin:0 0 10px"><strong>Why it needs review</strong><br>{{ item.reason }}</p>
+    <p>Actual URLs (inactive notation: [:], [.], [at]; not visited; redirect destinations unknown):</p>
+    {% for url in item.source_urls %}<p style="overflow-wrap:anywhere"><code>{{ url }}</code></p>{% endfor %}
     <p style="font-size:14px;line-height:1.7;margin:0"><strong>Original Gmail message ID</strong><br>{{ item.id }}</p>
   </div>
   {% endfor %}
@@ -94,9 +99,9 @@
 <tr><td height="18" style="font-size:0;line-height:0">&nbsp;</td></tr>
 {% if skipped %}
 <tr><td class="panel" style="padding:28px 32px;background:#fff4e5">
-<h2>Not included — processing failed</h2>
-<p>These messages were skipped. Their labels and read state are unchanged; they remain eligible for a future issue.</p>
-{% for item in skipped %}<div><h3>{{ item.subject }}</h3>{% if item.sender %}<p>From: {{ item.sender }}</p>{% endif %}<p>{{ item.reason }}</p>{% if item.original_url %}<p><a href="{{ item.original_url }}">Open original email</a></p>{% endif %}<p>Original Gmail message ID: {{ item.id }}</p></div>{% endfor %}
+<h2>Source copies / processing notices</h2>
+<p>Source copies are sender claims, not reviewed summaries or endorsements. Their labels and read state are unchanged; they remain eligible for a future issue.</p>
+{% for item in skipped %}<div><h3>{{ item.subject }}</h3>{% if item.sender %}<p>From: {{ item.sender }}</p>{% endif %}<p>{{ item.reason }}</p>{% if item.original_url %}<p><a href="{{ item.original_url }}">Open original email</a></p>{% endif %}{% if item.source_excerpt is defined %}<p>From: {{ item.source_sender }}</p>{% if item.source_concern %}<p>Concern: {{ item.source_concern }}</p>{% endif %}<p><strong>Sender content — unreviewed text excerpt:</strong></p><p style="white-space:pre-wrap">{{ item.source_excerpt or '[No readable text; inspect original email.]' }}</p><p>Text excerpt only; images and attachments are not reproduced.</p>{% if item.source_trimmed %}<p>long email, it was trimmed</p>{% endif %}<p>Actual URLs (inactive notation: [:], [.], [at]; not visited; redirect destinations unknown):</p>{% for url in item.source_urls %}<p style="overflow-wrap:anywhere"><code>{{ url }}</code></p>{% endfor %}{% endif %}<p>Original Gmail message ID: {{ item.id }}</p></div>{% endfor %}
 </td></tr>
 {% endif %}
 <tr><td style="padding:28px 24px;text-align:center;font-size:14px;line-height:1.7;background:#20221f;color:#c9cbc4;border-radius:16px"><strong style="color:#d8eba4">Less noise. More of your week.</strong><br>Nothing deleted. Originals remain in your mailbox.<br>Expired offers are explicitly marked.</td></tr>

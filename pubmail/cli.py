@@ -2,7 +2,7 @@ from __future__ import annotations
 import argparse, json, os
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from .io import Error, ProcessingPending, Gmail, Store, load_config
+from .io import Error, LockBusy, ProcessingPending, Gmail, Store, load_config
 from .reviewer import EscalatingModel
 from . import workflow, digest
 
@@ -15,6 +15,8 @@ def main():
     parser.add_argument("--config", default="~/.config/pub/config.yaml")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("check")
+    sub.add_parser("auth-recover")
+    image_retry=sub.add_parser("image-retry");image_retry.add_argument("key",help="64-character failure cache key, or all")
     sub.add_parser("review-status")
     sub.add_parser("review-test")
     sub.add_parser("automation-test")
@@ -54,6 +56,12 @@ def main():
             from .reviewer import smoke_test
             print(json.dumps(smoke_test(c)))
             return
+        from .scheduling import hourly_held, queue_weekly, accept_weekly
+        if args.command == 'hourly' and hourly_held(c):
+            print(json.dumps({'status': 'held', 'reason': 'Friday 10:00–12:59 local weekly window'}))
+            return
+        if args.command == 'weekly' and c['rollout'].get('digest_enabled') and c.get('automation', {}).get('enabled'):
+            queue_weekly(c)
         store = Store(c)
         gmail = Gmail(c)
         model = EscalatingModel(c, store)
@@ -64,7 +72,9 @@ def main():
                 return
         if args.command in ('weekly','resume') and c.get('automation',{}).get('enabled'):
             from .automation import run_weekly
-            result=run_weekly(gmail,c,model,store,start=args.command=='weekly')
+            if c['rollout'].get('digest_enabled'):
+                accept_weekly(c, store)
+            result=run_weekly(gmail,c,model,store,start=False)
             print(json.dumps(result))
             if result.get('status')=='blocked':parser.exit(1,'pubmail: workflow blocked; inspect automation-status\n')
             return
@@ -72,7 +82,8 @@ def main():
             from . import automation
             automation.setup(store)
             if args.command=='automation-status':
-                out={'jobs':dict(store.db.execute('SELECT name,state FROM automation_jobs')),
+                out={'queued_weekly': sorted(p.name for p in store.root.glob('weekly-request-*')),
+                     'jobs':dict(store.db.execute('SELECT name,state FROM automation_jobs')),
                      'job_errors':automation.job_errors(store),
                      'notification_errors':{i:json.loads(b)['notification_error'] for i,b in store.db.execute("SELECT id,body FROM automation_events WHERE status='failed'") if 'notification_error' in json.loads(b)},
                      'review_errors':{i:json.loads(r)['error'] for i,r in store.db.execute("SELECT id,result FROM senior_items WHERE status='failed' AND result IS NOT NULL") if 'error' in json.loads(r)},
@@ -83,6 +94,18 @@ def main():
             elif args.command=='review-resolve':out=automation.resolve(store,args.id,args.file)
             else:out={'status':'paused'}
             print(json.dumps(out));return
+        if args.command == 'image-retry':
+            from .vision import retry_failed_images
+            print(json.dumps(retry_failed_images(c,args.key)))
+            return
+        if args.command == 'auth-recover':
+            from .oauth import recovery_url
+            from .io import run
+            env = os.environ.copy()
+            if c.get('keyring_password_command'):
+                env['GOG_KEYRING_PASSWORD'] = run(c['keyring_password_command']).rstrip('\r\n')
+            print(recovery_url(c, env))
+            return
         if args.command == "review-status":
             out = model.reviewer.status()
         elif args.command == "check":
@@ -180,6 +203,8 @@ def main():
             digest.finish_labels(gmail, c, store, args.id, p)
             out = {"reconciled": args.id}
         print(json.dumps(out, ensure_ascii=False))
+    except LockBusy as e:
+        parser.exit(75, f"pubmail: {e}\n")
     except ProcessingPending as e:
         parser.exit(75, f"pubmail: pending image work: {e}\n")
     except Error as e:

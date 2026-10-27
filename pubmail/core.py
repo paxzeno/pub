@@ -258,6 +258,15 @@ def security(m, c):
                 port = parsed.port
             except ValueError:
                 return "uncertain", "Malformed URL", []
+            # Explicitly configured sender-scoped malformed-link omissions.
+            # Drop the URL; never repair, render or fetch it. Authority must still
+            # be ordinary HTTPS, with no credentials or unusual port.
+            omitted_malformed = link_policy.get('omitted_malformed_hosts', {}).get(original, [])
+            if (parsed.scheme == 'https' and parsed.hostname in omitted_malformed
+                and not parsed.username and not parsed.password and port in (None, 443)
+                and host('https://' + parsed.netloc) and '\\' not in url):
+                omitted_count += 1
+                continue
             # In-page anchors have no external destination. Omit them, never render.
             if not parsed.scheme and not parsed.netloc and not parsed.path and not parsed.query and url.startswith("#"):
                 omitted_count += 1
@@ -306,13 +315,27 @@ def preclassify(m, c):
         or domain(m["sender"]) in w.get("domains", [])
     ):
         return "keep", "Whitelist"
-    if m.get("protected_content") or PROTECTED.search(m["subject"] + "\n" + m["body"]):
-        return "keep", "Protected transactional/security content"
-    for r in c.get("advertising", []):
-        if r.get("sender") == m["original_sender"] and re.search(
-            r["subject_regex"], m["subject"]
-        ):
-            return "advertising", "Explicit sender and subject rule"
+    rules = [r for r in c.get("advertising", [])
+             if r.get("sender") == m["original_sender"]
+             and re.search(r["subject_regex"], m["subject"])
+             and (not r.get("body_regex") or re.search(r["body_regex"], m["body"]))]
+    protected = m.get("protected_content") or PROTECTED.search(m["subject"] + "\n" + m["body"])
+    if protected:
+        # Owner-reviewed literal marketing boilerplate only, on a matching rule.
+        # Never waive a subject warning, unseen/truncated text or other matches.
+        cleared = False
+        if not m.get('truncated', True) and not PROTECTED.search(m['subject']) and PROTECTED.search(m['body']):
+            for rule in rules:
+                body = re.sub(r'\s+', ' ', m['body'])
+                for phrase in rule.get('promotional_phrases', []):
+                    body = re.sub(re.escape(phrase), '', body, flags=re.I)
+                if not PROTECTED.search(body):
+                    cleared = True
+                    break
+        if not cleared:
+            return "keep", "Protected transactional/security content"
+    if rules:
+        return "advertising", "Explicit sender and subject rule"
     if (
         m.get("list_id")
         or m.get("unsubscribe")

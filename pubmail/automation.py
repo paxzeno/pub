@@ -218,10 +218,11 @@ def final_review(c,model,store,ident):
             raise
         except Error as exc:
             details=failure_details(exc,'source_final_review')
-            from .digest import skipped_identity
+            from .digest import skipped_identity, source_notice
             p.setdefault('skipped',[]).append({'id':i['id'],'subject':i['message']['subject'],
                                              'reason':details['chain'][0]['message'],'diagnostic':details,
-                                             **skipped_identity(i['message'], i.get('security')=='verified')})
+                                             **skipped_identity(i['message'], i.get('security')=='verified'),
+                                             **source_notice(i['message'],c)})
             rejected.add(i['id'])
     p['items']=[i for i in p['items'] if i['id'] not in rejected]
     p['flagged']=[i for i in p['flagged'] if i['id'] not in rejected]

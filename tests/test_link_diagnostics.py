@@ -105,8 +105,8 @@ class LinkDiagnostics(unittest.TestCase):
         m=normalize(raw());m['timestamp']=1787526000
         item={'id':m['id'],'message':m,'title':'Offer','summary':'Offer','deadline':None,'security_reason':'Review'}
         h,t,_=render(c,[item],[[m['id']]],[])
-        self.assertIn('From: '+m['original_sender']+'<br>Date: 2026-08-24 00:00:00',h)
-        self.assertIn('From: '+m['original_sender']+'\nDate: 2026-08-24 00:00:00',t)
+        self.assertIn('From: Shop &lt;'+m['original_sender']+'&gt;<br>Date: 2026-08-24 00:00:00',h)
+        self.assertIn('From: Shop <'+m['original_sender']+'>\nDate: 2026-08-24 00:00:00',t)
         h,t,_=render(c,[],[],[item])
         self.assertIn('Date: 2026-08-24 00:00:00',h)
         self.assertIn('\nDate: 2026-08-24 00:00:00',t)

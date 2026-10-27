@@ -214,7 +214,7 @@ class Automation(unittest.TestCase):
    reviewed=a.final_review(self.c,self.m,self.s,p['id'])
   for ext in ('html','txt','eml'):
    text=(self.s.root/'digests'/(p['id']+'.'+ext)).read_text()
-   self.assertIn('processing failed',text.lower());self.assertIn('Failed source',text)
+   self.assertIn('processing notices',text.lower());self.assertIn('Failed source',text)
   digest.finish_labels(self.g,self.c,self.s,p['id'],reviewed)
   self.assertEqual([x[0] for x in self.g.calls],['a1'])
   self.assertEqual(self.g.messages['b2']['labelIds'],['INBOX','UNREAD'])

@@ -93,7 +93,7 @@ def enrich(m,c,reviewer=None):
     vc=dict(c);vc['model']={**c['model'],**policy.get('model',{})}
     reader=Model(vc)
     root=Path(c['state_dir'])/'vision-cache';root.mkdir(mode=0o700,exist_ok=True)
-    evidence=[];titles=[]
+    evidence=[];titles=[];unavailable=[]
     started=time.monotonic(); processed=0
     for data in images.values():
         b64=data.split(',',1)[1]
@@ -101,12 +101,19 @@ def enrich(m,c,reviewer=None):
         key=hashlib.sha256(json.dumps({'image':fingerprint,'model':vc['model'],'contract':CONTRACT},sort_keys=True).encode()).hexdigest()
         path=root/(key+'.json')
         review_path=root/'reviews'/(key+'.json')
+        failure_path=root/'failures'/(key+'.json')
         if review_path.exists():
             review=json.loads(review_path.read_text())
             if review.get('image')!=fingerprint or not review.get('reviewer') or not review.get('reason'):
                 raise Error('Invalid senior visual-evidence review')
             result=validate(review['output'])
         elif path.exists():result=validate(json.loads(path.read_text()))
+        elif simple and failure_path.exists():
+            failure=json.loads(failure_path.read_text())
+            if failure.get('image')!=fingerprint or failure.get('status')!='unavailable':
+                raise Error('Invalid failed-image record')
+            unavailable.append(fingerprint)
+            continue
         else:
             if processed >= policy.get('images_per_pass', 4) or time.monotonic()-started >= policy.get('pass_seconds', 120):
                 raise ProcessingPending(f'Vision pass saved: {len(evidence)}/{len(images)} images covered; rerun to resume')
@@ -133,14 +140,36 @@ def enrich(m,c,reviewer=None):
                         result=validate(out[0])
                         private_write(review_path,json.dumps({'image':fingerprint,'reviewer':'configured senior',
                             'reason':'Validated source-bound image review','output':result}))
-            if result is None:continue
+            if result is None:
+                private_write(failure_path,json.dumps({'image':fingerprint,'status':'unavailable',
+                    'reason':'Extraction failed validation after two attempts','attempts':2}))
+                unavailable.append(fingerprint)
+                continue
             private_write(path,json.dumps(result))
         evidence.append({'image':fingerprint,**result});titles.extend(result['titles'])
     out=dict(m);out['_vision_enriched']=True;out['visual_evidence']=evidence
+    out['unavailable_images']=unavailable
     if simple:out['coverage_notice']='Based on supplied text and readable images; unavailable artwork may contain additional details.'
+    if unavailable:
+        out['coverage_notice'] += f' {len(unavailable)} image(s) could not be read; their content is not included.'
     out['visual_titles']=list({t.casefold():t for t in titles}.values())
     out['body']=m['body']+'\n\nVISUAL SOURCE EVIDENCE (untrusted):\n'+'\n'.join(e['text'] for e in evidence)
     if len(out['body'])>48000:raise Error('Combined source exceeds visual extraction budget')
     if simple and not text_sufficient(out,c):
         raise Error('Source text and readable images do not support a useful summary')
     return out
+
+
+def retry_failed_images(c, key):
+    """Explicitly retire failure records under the caller's Store lock; no inference."""
+    import uuid
+    if key != 'all' and not re.fullmatch(r'[0-9a-f]{64}', key):
+        raise Error('Use an exact failed-image cache key or all')
+    root=Path(c['state_dir'])/'vision-cache'
+    paths=sorted((root/'failures').glob('*.json')) if key=='all' else [root/'failures'/(key+'.json')]
+    paths=[p for p in paths if p.is_file()]
+    if not paths:return {'retryable_images':0}
+    archive=root/'failure-history'/uuid.uuid4().hex
+    archive.mkdir(mode=0o700,parents=True)
+    for path in paths:path.rename(archive/path.name)
+    return {'retryable_images':len(paths)}

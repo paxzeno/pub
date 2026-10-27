@@ -2,6 +2,7 @@
 
 from pathlib import Path
 import subprocess
+import sys
 
 root = Path(__file__).resolve().parents[1]
 if any(x in str(root) for x in (" ", "\n", "%", '"')):
@@ -12,22 +13,26 @@ units = Path.home() / ".config/systemd/user"
 units.mkdir(parents=True, exist_ok=True)
 exe = root / ".venv/bin/pubmail"
 for name, cmd, schedule in [
-    ("hourly", "hourly", "hourly"),
+    ("hourly", "hourly", "Sat,Sun,Mon,Tue,Wed,Thu *-*-* *:00:00 Europe/Lisbon\nOnCalendar=Fri *-*-* 00..09,13..23:00:00 Europe/Lisbon"),
     ("weekly", "weekly", "Fri *-*-* 11:00:00 Europe/Lisbon"),
-    ("resume", "resume", "*:0/5"),
+    ("resume", "resume", "*:02/5"),
 ]:
     service = f"""[Unit]
 Description=Pubmail {name} (guarded by local rollout config)
 After=network-online.target
 Wants=network-online.target
+StartLimitIntervalSec=0
 
 [Service]
-Type=oneshot
+Type=exec
 WorkingDirectory={root}
 ExecStart={exe} {cmd}
 Environment=PATH={Path.home()}/.local/bin:/home/linuxbrew/.linuxbrew/bin:/usr/local/bin:/usr/bin:/bin
 UMask=0077
 TimeoutStartSec=3600
+Restart=no
+RestartForceExitStatus=75
+RestartSec=60
 """
     timer = f"""[Unit]
 Description=Pubmail {name} schedule
@@ -43,6 +48,9 @@ WantedBy=timers.target
     (units / f"pubmail-{name}.service").write_text(service)
     (units / f"pubmail-{name}.timer").write_text(timer)
 subprocess.run(["systemctl", "--user", "daemon-reload"], check=True)
+if "--reload-only" in sys.argv:
+    print("Units updated and reloaded; no services or timers started.")
+    raise SystemExit(0)
 subprocess.run(
     [
         "systemctl",

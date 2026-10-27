@@ -129,3 +129,19 @@ evidence. Text-only/partial-artwork coverage is disclosed, never claimed complet
 Senior review handles content uncertainty, not image-host permission decisions.
 Unresolved essential content remains skipped and unlabelled. Prove changes against
 a private source snapshot with preparation/final review only before a live send.
+
+
+### Attributed reading copies (owner-directed)
+Newsletter inclusion is not endorsement or an action on an offer. Show the actual
+sender-provided URL targets, not anchor labels; do not resolve redirects or visit
+these links. Display sender name/address, distinguishing a relay's From from its
+claimed original. Existing classification, archive and delivery gates are unchanged.
+When preparation or final review cannot approve a source, provide a deterministic,
+escaped text excerpt instead of hiding all its content. Clearly identify it as
+unreviewed sender content, disclose trimming and missing images/attachments, and
+retain the processing concern. Unavailable sources still get a notice only.
+Reading copies and flagged entries expose targets in reversible inactive notation
+(`[:]`, `[.]`, `[at]`), never active sender links or source HTML. Their appearance
+confers no permission to fetch, act or trust. Reading copies stay outside delivery
+label transitions and remain pending; recheck their source fingerprint before send.
+Private preview URLs can contain recipient identifiers and must not be published.
